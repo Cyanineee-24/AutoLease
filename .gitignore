@@ -1,0 +1,26 @@
+# Environments
+venv/
+.venv/
+env/
+
+# Secrets & Environment Variables
+.env
+
+# Database
+db.sqlite3
+*.sqlite3
+
+# Python Caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs & OS Files
+.obsidian/
+.DS_Store
+.vscode/
+
+# AI Architect Context (Hides vibe-coding scaffolding)
+AGENTS.md
+docs/
+planning/

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}AutoLease | Find your next drive{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <p class="eyebrow">Rent local. Drive farther.</p>
+        <h1>The right car for every road ahead.</h1>
+        <p class="hero-copy">AutoLease connects you with trusted local rental businesses, so your next trip starts with confidence.</p>
+        <a class="button" href="{% url 'accounts:register' %}">Find your drive</a>
+    </div>
+</section>
+
+<section class="feature-section" aria-labelledby="how-it-works">
+    <div class="section-heading">
+        <p class="eyebrow">Simple by design</p>
+        <h2 id="how-it-works">A better way to rent locally.</h2>
+    </div>
+    <div class="feature-grid">
+        <article class="card">
+            <h3>Choose with ease</h3>
+            <p>Discover vehicles from local rental partners in one convenient place.</p>
+        </article>
+        <article class="card">
+            <h3>Book with confidence</h3>
+            <p>Send an inquiry and get the details you need before your journey begins.</p>
+        </article>
+        <article class="card">
+            <h3>Support local fleets</h3>
+            <p>Every rental helps neighborhood businesses keep great cars on the road.</p>
+        </article>
+    </div>
+</section>
+{% endblock %}

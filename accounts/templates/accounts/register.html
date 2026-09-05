@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Create an account | AutoLease{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-card card">
+        <p class="eyebrow">Get started</p>
+        <h1>Create your AutoLease account</h1>
+        <p class="auth-copy">Join as a renter or set up your local rental business.</p>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-field">
+                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                {{ form.email }}
+                {{ form.email.errors }}
+            </div>
+
+            <fieldset class="form-field role-field">
+                <legend>{{ form.account_type.label }}</legend>
+                {{ form.account_type }}
+                {{ form.account_type.errors }}
+            </fieldset>
+
+            <div class="form-field">
+                <label for="{{ form.business_name.id_for_label }}">Business name <span class="optional">(agencies only)</span></label>
+                {{ form.business_name }}
+                {{ form.business_name.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.contact_number.id_for_label }}">Contact number <span class="optional">(agencies only)</span></label>
+                {{ form.contact_number }}
+                {{ form.contact_number.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.password1.id_for_label }}">Password</label>
+                {{ form.password1 }}
+                {{ form.password1.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.password2.id_for_label }}">Confirm password</label>
+                {{ form.password2 }}
+                {{ form.password2.errors }}
+            </div>
+
+            <button class="button" type="submit">Create account</button>
+        </form>
+        <p class="auth-footer">Already have an account? <a href="{% url 'accounts:login' %}">Log in</a>.</p>
+    </div>
+</section>
+{% endblock %}
