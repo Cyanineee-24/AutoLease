@@ -23,7 +23,7 @@ class RegistrationViewTests(TestCase):
             self.registration_data(),
         )
 
-        self.assertRedirects(response, reverse('home'))
+        self.assertRedirects(response, reverse('accounts:renter_dashboard'))
         user = CustomUser.objects.get(email='renter@example.com')
         self.assertTrue(user.is_renter)
         self.assertFalse(user.is_agency)

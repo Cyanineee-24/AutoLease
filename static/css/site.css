@@ -1,3 +1,8 @@
+/* ================================================================
+   AutoLease — Global Stylesheet
+   Airbnb-inspired design system · vanilla CSS
+   ================================================================ */
+
 :root {
     --color-primary: #E61E4D;
     --color-primary-dark: #C9153F;
@@ -7,6 +12,11 @@
     --color-surface: #FFFFFF;
     --color-border: #DDDDDD;
     --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    /* Navbar-specific tokens */
+    --nav-height: 72px;
+    --avatar-size: 32px;
+    --dropdown-width: 280px;
 }
 
 * { box-sizing: border-box; }
@@ -21,6 +31,11 @@ body {
 
 a { color: inherit; text-decoration: none; }
 
+
+/* ----------------------------------------------------------------
+   Site Header / Navbar
+   ---------------------------------------------------------------- */
+
 .site-header {
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
@@ -32,15 +47,160 @@ a { color: inherit; text-decoration: none; }
     justify-content: space-between;
     margin: 0 auto;
     max-width: 1120px;
-    min-height: 72px;
+    min-height: var(--nav-height);
     padding: 0 24px;
 }
 
-.brand { color: var(--color-primary); font-size: 1.45rem; font-weight: 700; letter-spacing: -0.04em; }
-.nav-container nav { align-items: center; display: flex; gap: 20px; }
-.nav-link { font-size: 0.95rem; font-weight: 600; }
-.nav-link:hover { text-decoration: underline; }
-.nav-user { color: var(--color-muted); font-size: 0.9rem; }
+.brand {
+    color: var(--color-primary);
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
+
+/* Right-side actions group */
+.nav-actions {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+}
+
+
+/* ---- "Become a host" pill button ---- */
+
+.btn-host {
+    border: 1.5px solid var(--color-border);
+    border-radius: 24px;
+    color: var(--color-text);
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 8px 18px;
+    transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.btn-host:hover {
+    background: var(--color-background);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+
+/* ---- Menu toggle (hamburger + avatar pill) ---- */
+
+.menu-wrapper {
+    position: relative;
+}
+
+.menu-toggle {
+    align-items: center;
+    appearance: none;
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    border-radius: 24px;
+    color: var(--color-text);
+    cursor: pointer;
+    display: flex;
+    gap: 10px;
+    padding: 5px 6px 5px 12px;
+    transition: box-shadow 150ms ease;
+}
+
+.menu-toggle:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.icon-hamburger {
+    flex-shrink: 0;
+}
+
+
+/* ---- Avatar circle ---- */
+
+.avatar-circle {
+    align-items: center;
+    background: var(--color-primary);
+    border-radius: 50%;
+    color: #FFFFFF;
+    display: flex;
+    font-size: 0.8rem;
+    font-weight: 700;
+    height: var(--avatar-size);
+    justify-content: center;
+    width: var(--avatar-size);
+}
+
+.avatar-guest {
+    background: var(--color-muted);
+}
+
+
+/* ---- Dropdown menu ---- */
+
+.nav-dropdown {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+    min-width: var(--dropdown-width);
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    transform: translateY(-6px);
+    transition: opacity 180ms ease, transform 180ms ease;
+    z-index: 100;
+}
+
+.nav-dropdown.is-open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.nav-dropdown-item {
+    align-items: center;
+    display: flex;
+    gap: 14px;
+    padding: 14px 18px;
+    transition: background-color 120ms ease;
+}
+
+.nav-dropdown-item:hover {
+    background: var(--color-background);
+}
+
+.dropdown-icon {
+    color: var(--color-muted);
+    flex-shrink: 0;
+}
+
+.dropdown-label-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.dropdown-label {
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.dropdown-sublabel {
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    line-height: 1.35;
+    margin-top: 2px;
+}
+
+.dropdown-divider {
+    border-top: 1px solid var(--color-border);
+    margin: 4px 0;
+}
+
+
+/* ----------------------------------------------------------------
+   Buttons (global)
+   ---------------------------------------------------------------- */
 
 .button {
     background: var(--color-primary);
@@ -56,30 +216,100 @@ a { color: inherit; text-decoration: none; }
     transition: background-color 150ms ease, border-color 150ms ease;
 }
 
-.button:hover, .button:focus { background: var(--color-primary-dark); border-color: var(--color-primary-dark); }
+.button:hover, .button:focus {
+    background: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+}
+
 .button-small { padding: 9px 16px; }
+
+
+/* ----------------------------------------------------------------
+   Hero Section
+   ---------------------------------------------------------------- */
 
 .hero {
     background: linear-gradient(125deg, #FFF0F4 0%, #FFFFFF 56%, #FCE8EF 100%);
     min-height: 470px;
+    overflow: hidden;
     padding: 96px 24px;
+    position: relative;
 }
 
 .hero-content, .feature-section { margin: 0 auto; max-width: 1120px; }
-.hero-content { max-width: 760px; text-align: center; }
-.eyebrow { color: var(--color-primary); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.09em; margin: 0 0 12px; text-transform: uppercase; }
+
+.hero-content {
+    max-width: 760px;
+    position: relative;
+    text-align: center;
+    z-index: 2;
+}
+
+.eyebrow {
+    color: var(--color-primary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    margin: 0 0 12px;
+    text-transform: uppercase;
+}
+
 h1, h2, h3 { letter-spacing: -0.03em; line-height: 1.12; }
+
 .hero h1 { font-size: clamp(2.5rem, 7vw, 4.75rem); margin: 0; }
-.hero-copy { color: var(--color-muted); font-size: 1.15rem; margin: 24px auto 32px; max-width: 600px; }
+
+.hero-copy {
+    color: var(--color-muted);
+    font-size: 1.15rem;
+    margin: 24px auto 32px;
+    max-width: 600px;
+}
+
+
+/* ---- Hero background image (right side, fades into gradient) ---- */
+
+.hero-image {
+    background-image: url('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=900&q=80');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    bottom: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 50%;
+    z-index: 1;
+
+    /* Fade into the hero's pink-white gradient from the left */
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.5) 100%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.5) 100%);
+}
+
+
+/* ----------------------------------------------------------------
+   Feature Section & Cards
+   ---------------------------------------------------------------- */
 
 .feature-section { padding: 72px 24px 96px; }
 .section-heading { margin-bottom: 28px; }
 .section-heading h2 { font-size: 2rem; margin: 0; }
 .feature-grid { display: grid; gap: 20px; grid-template-columns: repeat(3, 1fr); }
-.card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; box-shadow: var(--shadow-card); }
+
+.card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+}
+
 .feature-grid .card { padding: 28px; }
 .card h3 { font-size: 1.2rem; margin: 0 0 12px; }
 .card p { color: var(--color-muted); margin: 0; }
+
+
+/* ----------------------------------------------------------------
+   Auth Pages (Login / Register)
+   ---------------------------------------------------------------- */
 
 .auth-section { display: grid; min-height: calc(100vh - 73px); padding: 64px 24px; place-items: center; }
 .auth-card { max-width: 460px; padding: 36px; width: 100%; }
@@ -99,9 +329,163 @@ h1, h2, h3 { letter-spacing: -0.03em; line-height: 1.12; }
 .auth-footer { color: var(--color-muted); font-size: 0.92rem; margin: 24px 0 0; }
 .auth-footer a { color: var(--color-primary); font-weight: 700; }
 
+
+/* ----------------------------------------------------------------
+   Logout form (inside dropdown — reset form chrome)
+   ---------------------------------------------------------------- */
+
+.logout-form {
+    margin: 0;
+    padding: 0;
+}
+
+.logout-form .nav-dropdown-item {
+    appearance: none;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    width: 100%;
+}
+
+
+/* ----------------------------------------------------------------
+   Search Bar (Airbnb-inspired pill)
+   ---------------------------------------------------------------- */
+
+.search-section {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 16px 24px;
+}
+
+.search-bar {
+    align-items: center;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 40px;
+    display: flex;
+    margin: 0 auto;
+    max-width: 680px;
+    overflow: hidden;
+    transition: box-shadow 150ms ease;
+}
+
+.search-bar:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 12px rgba(230, 30, 77, 0.10);
+}
+
+.search-field {
+    flex: 1;
+    padding: 10px 20px;
+}
+
+.search-label {
+    color: var(--color-text);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.search-input {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 0.88rem;
+    outline: none;
+    padding: 2px 0 0;
+    width: 100%;
+}
+
+.search-input::placeholder {
+    color: var(--color-muted);
+}
+
+.search-divider {
+    background: var(--color-border);
+    flex-shrink: 0;
+    height: 28px;
+    width: 1px;
+}
+
+.search-button {
+    align-items: center;
+    appearance: none;
+    background: var(--color-primary);
+    border: none;
+    border-radius: 50%;
+    color: #FFFFFF;
+    cursor: pointer;
+    display: flex;
+    flex-shrink: 0;
+    height: 40px;
+    justify-content: center;
+    margin-right: 8px;
+    transition: background-color 150ms ease;
+    width: 40px;
+}
+
+.search-button:hover {
+    background: var(--color-primary-dark);
+}
+
+
+/* ----------------------------------------------------------------
+   Empty State
+   ---------------------------------------------------------------- */
+
+.empty-state {
+    display: grid;
+    min-height: calc(100vh - 200px);
+    padding: 64px 24px;
+    place-items: center;
+}
+
+.empty-state-inner {
+    text-align: center;
+}
+
+.empty-state-icon {
+    color: var(--color-border);
+    margin-bottom: 24px;
+}
+
+.empty-state-heading {
+    font-size: 1.6rem;
+    margin: 0 0 12px;
+}
+
+.empty-state-copy {
+    color: var(--color-muted);
+    font-size: 1rem;
+    margin: 0 auto;
+    max-width: 380px;
+}
+
+
+/* ----------------------------------------------------------------
+   Responsive
+   ---------------------------------------------------------------- */
+
 @media (max-width: 700px) {
     .nav-container { padding: 0 18px; }
+    .btn-host { display: none; }
+    .nav-dropdown { min-width: 240px; right: -4px; }
     .feature-grid { grid-template-columns: 1fr; }
     .hero { min-height: auto; padding: 72px 24px; }
+    .hero-image { opacity: 0.25; width: 100%; }
     .feature-section { padding: 56px 24px 72px; }
+
+    .search-bar { flex-direction: column; border-radius: 16px; }
+    .search-divider { height: 1px; width: 100%; }
+    .search-field { padding: 8px 18px; }
+    .search-button { margin: 8px auto 10px; }
+    .empty-state { min-height: calc(100vh - 260px); }
 }
