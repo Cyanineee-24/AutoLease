@@ -17,7 +17,6 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load local development credentials without committing them to the repository.
 load_dotenv(BASE_DIR / '.env')
 
 
@@ -44,8 +43,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
 ]
-
-AUTH_USER_MODEL = 'accounts.CustomUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -83,14 +80,16 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ["SUPABASE_DB_NAME"],
-        "USER": os.environ["SUPABASE_DB_USER"],
-        "PASSWORD": os.environ["SUPABASE_DB_PASSWORD"],
-        "HOST": os.environ["SUPABASE_DB_HOST"],
-        "PORT": os.environ["SUPABASE_DB_PORT"],
+        "NAME": os.environ.get("SUPABASE_DB_NAME"),
+        "USER": os.environ.get("SUPABASE_DB_USER"),
+        "PASSWORD": os.environ.get("SUPABASE_DB_PASSWORD"),
+        "HOST": os.environ.get("SUPABASE_DB_HOST"),
+        "PORT": os.environ.get("SUPABASE_DB_PORT"),
         "OPTIONS": {"sslmode": "require"},
     }
 }
+
+
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
 
@@ -137,3 +136,5 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+AUTH_USER_MODEL = 'accounts.CustomUser'
