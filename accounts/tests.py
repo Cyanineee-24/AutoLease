@@ -83,7 +83,7 @@ class LoginViewTests(TestCase):
             password='A-secure-password-123',
         )
 
-    def test_login_redirects_to_home(self):
+    def test_login_redirects_to_dashboard(self):
         response = self.client.post(
             reverse('accounts:login'),
             {
@@ -91,7 +91,7 @@ class LoginViewTests(TestCase):
                 'password': 'A-secure-password-123',
             },
         )
-        self.assertRedirects(response, reverse('home'))
+        self.assertRedirects(response, reverse('accounts:renter_dashboard'))
 
     def test_login_renders_prefilled_credentials_and_clears_session(self):
         session = self.client.session

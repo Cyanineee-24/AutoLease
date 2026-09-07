@@ -138,4 +138,4 @@ MAILERS = {
 }
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
-LOGIN_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'accounts:renter_dashboard'

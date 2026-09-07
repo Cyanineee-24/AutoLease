@@ -30,7 +30,7 @@ class UserLoginView(auth_views.LoginView):
     redirect_authenticated_user = True
 
     def get_default_redirect_url(self):
-        return reverse('home')
+        return reverse('accounts:renter_dashboard')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -41,6 +41,4 @@ class UserLoginView(auth_views.LoginView):
 
 @login_required
 def renter_dashboard(request):
-    if not request.user.is_renter:
-        return redirect('home')
     return render(request, 'accounts/dashboard.html')

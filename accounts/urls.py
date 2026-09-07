@@ -10,7 +10,7 @@ urlpatterns = [
     path(
         'login/',
         views.UserLoginView.as_view(
-            next_page='home',
+            next_page='accounts:renter_dashboard',
             redirect_authenticated_user=True,
         ),
         name='login',

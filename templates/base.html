@@ -10,7 +10,7 @@
 <body>
     <header class="site-header">
         <div class="nav-container">
-            <a class="brand" href="{% url 'home' %}">AutoLease</a>
+            <a class="brand" href="{% if user.is_authenticated %}{% url 'accounts:renter_dashboard' %}{% else %}{% url 'home' %}{% endif %}">AutoLease</a>
 
             <div class="nav-actions">
                 {# Pill button — visible on wider screens #}
