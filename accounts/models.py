@@ -4,6 +4,7 @@ from django.db import models
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
+    contact_number = models.CharField(max_length=50, blank=True)
     is_renter = models.BooleanField(default=False)
     is_agency = models.BooleanField(default=False)
 

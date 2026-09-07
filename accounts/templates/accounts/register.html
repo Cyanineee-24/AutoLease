@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Create an account | AutoLease{% endblock %}
 
@@ -27,14 +28,14 @@
                 {{ form.account_type.errors }}
             </fieldset>
 
-            <div class="form-field">
-                <label for="{{ form.business_name.id_for_label }}">Business name <span class="optional">(agencies only)</span></label>
+            <div class="form-field is-hidden" id="business-name-group">
+                <label for="{{ form.business_name.id_for_label }}">Business name</label>
                 {{ form.business_name }}
                 {{ form.business_name.errors }}
             </div>
 
             <div class="form-field">
-                <label for="{{ form.contact_number.id_for_label }}">Contact number <span class="optional">(agencies only)</span></label>
+                <label for="{{ form.contact_number.id_for_label }}">Contact number</label>
                 {{ form.contact_number }}
                 {{ form.contact_number.errors }}
             </div>
@@ -56,4 +57,8 @@
         <p class="auth-footer">Already have an account? <a href="{% url 'accounts:login' %}">Log in</a>.</p>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/register.js' %}" defer></script>
 {% endblock %}

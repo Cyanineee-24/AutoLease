@@ -44,7 +44,19 @@ class RegistrationViewTests(TestCase):
         user = CustomUser.objects.get(email='agency@example.com')
         profile = AgencyProfile.objects.get(user=user)
         self.assertTrue(user.is_agency)
+        self.assertEqual(user.contact_number, '09171234567')
         self.assertEqual(profile.business_name, 'City Drives')
+        self.assertEqual(profile.contact_number, '09171234567')
+
+    def test_renter_registration_saves_contact_number(self):
+        response = self.client.post(
+            reverse('accounts:register'),
+            self.registration_data(contact_number='09189876543'),
+        )
+
+        self.assertRedirects(response, reverse('accounts:renter_dashboard'))
+        user = CustomUser.objects.get(email='renter@example.com')
+        self.assertEqual(user.contact_number, '09189876543')
 
     def test_agency_registration_requires_business_details(self):
         response = self.client.post(

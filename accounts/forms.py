@@ -53,6 +53,7 @@ class RegistrationForm(UserCreationForm):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
         user.username = user.email
+        user.contact_number = self.cleaned_data.get('contact_number', '')
         user.is_renter = self.cleaned_data['account_type'] == self.ACCOUNT_TYPE_RENTER
         user.is_agency = self.cleaned_data['account_type'] == self.ACCOUNT_TYPE_AGENCY
 
