@@ -1,6 +1,8 @@
-from django.contrib.auth import login
+from django.contrib import messages
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.urls import reverse
 
 from .forms import RegistrationForm
 
@@ -13,14 +15,28 @@ def register(request):
         form = RegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
-            if user.is_renter:
-                return redirect('accounts:renter_dashboard')
-            return redirect('home')
+            request.session['prefill_email'] = form.cleaned_data.get('email')
+            request.session['prefill_password'] = form.cleaned_data.get('password1')
+            messages.success(request, 'Account created successfully! Click Log in to continue.')
+            return redirect('accounts:login')
     else:
         form = RegistrationForm()
 
     return render(request, 'accounts/register.html', {'form': form})
+
+
+class UserLoginView(auth_views.LoginView):
+    template_name = 'accounts/login.html'
+    redirect_authenticated_user = True
+
+    def get_default_redirect_url(self):
+        return reverse('home')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['prefill_email'] = self.request.session.pop('prefill_email', '')
+        context['prefill_password'] = self.request.session.pop('prefill_password', '')
+        return context
 
 
 @login_required

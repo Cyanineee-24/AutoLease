@@ -21,13 +21,19 @@ class RegistrationViewTests(TestCase):
         response = self.client.post(
             reverse('accounts:register'),
             self.registration_data(),
+            follow=True,
         )
 
-        self.assertRedirects(response, reverse('accounts:renter_dashboard'))
+        self.assertRedirects(response, reverse('accounts:login'))
         user = CustomUser.objects.get(email='renter@example.com')
         self.assertTrue(user.is_renter)
         self.assertFalse(user.is_agency)
         self.assertEqual(user.username, user.email)
+        # assertRedirects followed the redirect to login, where credentials were popped and rendered
+        self.assertContains(response, 'value="renter@example.com"')
+        self.assertContains(response, 'value="A-secure-password-123"')
+        self.assertContains(response, 'Account created successfully! Click Log in to continue.')
+
 
     def test_agency_registration_creates_an_agency_profile(self):
         response = self.client.post(
@@ -40,7 +46,7 @@ class RegistrationViewTests(TestCase):
             ),
         )
 
-        self.assertRedirects(response, reverse('home'))
+        self.assertRedirects(response, reverse('accounts:login'))
         user = CustomUser.objects.get(email='agency@example.com')
         profile = AgencyProfile.objects.get(user=user)
         self.assertTrue(user.is_agency)
@@ -54,7 +60,7 @@ class RegistrationViewTests(TestCase):
             self.registration_data(contact_number='09189876543'),
         )
 
-        self.assertRedirects(response, reverse('accounts:renter_dashboard'))
+        self.assertRedirects(response, reverse('accounts:login'))
         user = CustomUser.objects.get(email='renter@example.com')
         self.assertEqual(user.contact_number, '09189876543')
 
@@ -67,3 +73,36 @@ class RegistrationViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(CustomUser.objects.exists())
         self.assertContains(response, 'Enter your business name.')
+
+
+class LoginViewTests(TestCase):
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            username='user@example.com',
+            email='user@example.com',
+            password='A-secure-password-123',
+        )
+
+    def test_login_redirects_to_home(self):
+        response = self.client.post(
+            reverse('accounts:login'),
+            {
+                'username': 'user@example.com',
+                'password': 'A-secure-password-123',
+            },
+        )
+        self.assertRedirects(response, reverse('home'))
+
+    def test_login_renders_prefilled_credentials_and_clears_session(self):
+        session = self.client.session
+        session['prefill_email'] = 'prefill@example.com'
+        session['prefill_password'] = 'prefill-pass'
+        session.save()
+
+        response = self.client.get(reverse('accounts:login'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="prefill@example.com"')
+        self.assertContains(response, 'value="prefill-pass"')
+        self.assertNotIn('prefill_email', self.client.session)
+        self.assertNotIn('prefill_password', self.client.session)
+

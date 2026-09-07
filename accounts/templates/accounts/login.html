@@ -9,6 +9,14 @@
         <h1>Log in to AutoLease</h1>
         <p class="auth-copy">Access your rental inquiries and account details.</p>
 
+        {% if messages %}
+            <div class="form-messages">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         <form method="post" class="auth-form">
             {% csrf_token %}
             {% if form.non_field_errors %}
@@ -16,11 +24,11 @@
             {% endif %}
             <div class="form-field">
                 <label for="id_username">Email</label>
-                <input type="email" name="username" id="id_username" autocomplete="email" required autofocus>
+                <input type="email" name="username" id="id_username" autocomplete="email" required autofocus value="{{ form.username.value|default:prefill_email|default:'' }}">
             </div>
             <div class="form-field">
                 <label for="id_password">Password</label>
-                <input type="password" name="password" id="id_password" autocomplete="current-password" required>
+                <input type="password" name="password" id="id_password" autocomplete="current-password" required value="{{ prefill_password|default:'' }}">
             </div>
             <input type="hidden" name="next" value="{{ next }}">
             <button class="button" type="submit">Log in</button>
