@@ -41,12 +41,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'accounts',
-    'login',
-    'register',
-    'home',
-    'userprofile',
-    'usersettings',
+    'apps.accounts',
+    'apps.login',
+    'apps.register',
+    'apps.home',
+    'apps.userprofile',
+    'apps.usersettings',
 ]
 
 MIDDLEWARE = [
@@ -131,6 +131,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # Email

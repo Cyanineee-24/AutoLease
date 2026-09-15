@@ -40,3 +40,20 @@
     border-top: 2px solid var(--color-border);
     margin: 8px 0;
 }
+
+.profile-edit-form {
+    border-top: 1px solid var(--color-border);
+    margin-top: 32px;
+    padding-top: 24px;
+}
+
+.profile-image-preview {
+    margin-bottom: 8px;
+}
+
+.profile-image-preview img {
+    border-radius: 8px;
+    max-height: 100px;
+    max-width: 100px;
+    object-fit: cover;
+}
