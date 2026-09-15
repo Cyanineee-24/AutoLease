@@ -37,3 +37,47 @@
     line-height: 1.4;
     margin-top: 4px;
 }
+
+
+/* ---- Toggle label group (label + description in a flex column) ---- */
+
+.toggle-label-group {
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ---- Section dividers ---- */
+
+.settings-section {
+    padding: 4px 0;
+}
+
+.settings-section + .settings-section {
+    border-top: 1px solid var(--color-border);
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+.settings-section-heading {
+    color: var(--color-text);
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    margin: 0 0 4px;
+}
+
+
+/* ---- Outline button variant ---- */
+
+.button-outline {
+    background: transparent;
+    border: 1.5px solid var(--color-border);
+    color: var(--color-text);
+    margin-top: 12px;
+}
+
+.button-outline:hover,
+.button-outline:focus {
+    background: var(--color-background);
+    border-color: var(--color-text);
+}

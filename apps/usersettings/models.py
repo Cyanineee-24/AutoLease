@@ -9,6 +9,9 @@ class UserSettings(models.Model):
         related_name='settings',
     )
     email_notifications = models.BooleanField(default=True)
+    marketing_emails = models.BooleanField(default=True)
+    sms_notifications = models.BooleanField(default=False)
+    show_contact_number = models.BooleanField(default=True)
 
     class Meta:
         verbose_name_plural = 'user settings'

@@ -12,7 +12,7 @@
     <div class="auth-card card">
         <p class="eyebrow">Preferences</p>
         <h1>Settings</h1>
-        <p class="auth-copy">Manage your notification preferences.</p>
+        <p class="auth-copy">Manage your notification, privacy, and security preferences.</p>
 
         {% if messages %}
             <div class="form-messages">
@@ -24,15 +24,58 @@
 
         <form method="post" class="auth-form">
             {% csrf_token %}
-            <div class="settings-toggle">
-                <label class="toggle-row" for="{{ form.email_notifications.id_for_label }}">
-                    {{ form.email_notifications }}
-                    <span class="toggle-label">Email notifications</span>
-                    <span class="toggle-desc">Receive email updates about your rentals and account activity.</span>
-                </label>
+
+            <div class="settings-section">
+                <h2 class="settings-section-heading">Notifications</h2>
+
+                <div class="settings-toggle">
+                    <label class="toggle-row" for="{{ form.email_notifications.id_for_label }}">
+                        {{ form.email_notifications }}
+                        <div class="toggle-label-group">
+                            <span class="toggle-label">Email notifications</span>
+                            <span class="toggle-desc">Receive email updates about your rentals and account activity.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="settings-toggle">
+                    <label class="toggle-row" for="{{ form.marketing_emails.id_for_label }}">
+                        {{ form.marketing_emails }}
+                        <div class="toggle-label-group">
+                            <span class="toggle-label">Marketing emails</span>
+                            <span class="toggle-desc">Receive promotional offers and deals from AutoLease.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="settings-toggle">
+                    <label class="toggle-row" for="{{ form.sms_notifications.id_for_label }}">
+                        {{ form.sms_notifications }}
+                        <div class="toggle-label-group">
+                            <span class="toggle-label">SMS notifications</span>
+                            <span class="toggle-desc">Receive text messages for booking updates and reminders.</span>
+                        </div>
+                    </label>
+                </div>
             </div>
+
+            <div class="settings-section">
+                <h2 class="settings-section-heading">Privacy</h2>
+
+                <div class="settings-toggle">
+                    <label class="toggle-row" for="{{ form.show_contact_number.id_for_label }}">
+                        {{ form.show_contact_number }}
+                        <div class="toggle-label-group">
+                            <span class="toggle-label">Show contact number</span>
+                            <span class="toggle-desc">Allow the other party in a booking or inquiry to see your contact number.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             <button class="button" type="submit">Save settings</button>
         </form>
+
     </div>
 </section>
 {% endblock %}
