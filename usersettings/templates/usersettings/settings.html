@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Settings | AutoLease{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/usersettings/settings.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-card card">
+        <p class="eyebrow">Preferences</p>
+        <h1>Settings</h1>
+        <p class="auth-copy">Manage your notification preferences.</p>
+
+        {% if messages %}
+            <div class="form-messages">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            <div class="settings-toggle">
+                <label class="toggle-row" for="{{ form.email_notifications.id_for_label }}">
+                    {{ form.email_notifications }}
+                    <span class="toggle-label">Email notifications</span>
+                    <span class="toggle-desc">Receive email updates about your rentals and account activity.</span>
+                </label>
+            </div>
+            <button class="button" type="submit">Save settings</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

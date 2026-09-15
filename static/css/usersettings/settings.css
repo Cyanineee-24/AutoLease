@@ -1,0 +1,39 @@
+/* ================================================================
+   UserSettings — settings.css
+   Settings toggle styles
+   ================================================================ */
+
+.settings-toggle {
+    margin-top: 8px;
+}
+
+.toggle-row {
+    align-items: flex-start;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    padding: 14px 0;
+}
+
+.toggle-row input[type="checkbox"] {
+    accent-color: var(--color-primary);
+    flex-shrink: 0;
+    height: 20px;
+    margin-top: 2px;
+    width: 20px;
+}
+
+.toggle-label {
+    color: var(--color-text);
+    display: block;
+    font-size: 0.94rem;
+    font-weight: 600;
+}
+
+.toggle-desc {
+    color: var(--color-muted);
+    display: block;
+    font-size: 0.84rem;
+    line-height: 1.4;
+    margin-top: 4px;
+}
