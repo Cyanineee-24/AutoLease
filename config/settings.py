@@ -42,6 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',
+    'login',
+    'register',
+    'home',
+    'userprofile',
+    'usersettings',
 ]
 
 MIDDLEWARE = [
@@ -138,4 +143,4 @@ MAILERS = {
 }
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
-LOGIN_REDIRECT_URL = 'accounts:renter_dashboard'
+LOGIN_REDIRECT_URL = 'home:dashboard'
