@@ -7,11 +7,13 @@ app_name = 'login'
 
 urlpatterns = [
     path(
-        'login/',
-        views.UserLoginView.as_view(
-            next_page='accounts:renter_dashboard',
-            redirect_authenticated_user=True,
-        ),
+        '',
+        views.UserLoginView.as_view(),
         name='login',
+    ),
+    path(
+        'logout/',
+        auth_views.LogoutView.as_view(next_page='home:landing'),
+        name='logout',
     ),
 ]
