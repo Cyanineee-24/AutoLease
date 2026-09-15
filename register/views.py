@@ -6,7 +6,7 @@ from .forms import RegistrationForm
 
 def register(request):
     if request.user.is_authenticated:
-        return redirect('home:landing')
+        return redirect('home')
 
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
