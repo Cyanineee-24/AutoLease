@@ -1,59 +1,179 @@
 /* ================================================================
    UserProfile — profile.css
-   View-only profile info display
+   Card-style profile view + edit form styles
    ================================================================ */
 
-.profile-info {
-    display: grid;
-    gap: 0;
-    margin-top: 24px;
-}
 
-.profile-row {
-    align-items: baseline;
-    border-bottom: 1px solid var(--color-border);
+/* ----------------------------------------------------------------
+   Profile Header (avatar + name + meta)
+   ---------------------------------------------------------------- */
+
+.profile-header {
+    align-items: center;
     display: flex;
-    gap: 16px;
-    justify-content: space-between;
-    padding: 14px 0;
+    flex-direction: column;
+    padding: 8px 0 24px;
+    text-align: center;
 }
 
-.profile-row:last-child {
+.profile-avatar {
+    align-items: center;
+    background: var(--color-primary);
+    border-radius: 50%;
+    color: #FFFFFF;
+    display: flex;
+    font-size: 1.6rem;
+    font-weight: 700;
+    height: 72px;
+    justify-content: center;
+    width: 72px;
+}
+
+.profile-name {
+    font-size: 1.5rem;
+    letter-spacing: -0.03em;
+    margin: 16px 0 0;
+}
+
+.profile-email {
+    color: var(--color-muted);
+    font-size: 0.92rem;
+    margin: 4px 0 0;
+}
+
+.profile-meta {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.profile-badge {
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    color: var(--color-text);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 4px 12px;
+}
+
+.profile-contact {
+    color: var(--color-muted);
+    font-size: 0.84rem;
+}
+
+.profile-edit-btn {
+    margin-top: 20px;
+    width: 100%;
+}
+
+
+/* ----------------------------------------------------------------
+   Menu Rows (settings, agency details, log out)
+   ---------------------------------------------------------------- */
+
+.profile-menu {
+    border-top: 1px solid var(--color-border);
+    margin-top: 8px;
+    padding-top: 4px;
+}
+
+.profile-menu-row {
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    cursor: pointer;
+    display: flex;
+    gap: 14px;
+    padding: 16px 4px;
+    transition: background-color 120ms ease;
+}
+
+.profile-menu-row:last-child {
     border-bottom: none;
 }
 
-.profile-label {
+.profile-menu-row:hover {
+    background: var(--color-background);
+}
+
+/* Static row (no link/hover) for agency details display */
+.profile-menu-row--static {
+    cursor: default;
+}
+
+.profile-menu-row--static:hover {
+    background: transparent;
+}
+
+/* Button variant for logout (reset form-button chrome) */
+.profile-menu-row--button {
+    appearance: none;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    width: 100%;
+}
+
+.profile-menu-icon {
     color: var(--color-muted);
-    font-size: 0.88rem;
+    flex-shrink: 0;
+}
+
+.profile-menu-label-group {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.profile-menu-label {
+    font-size: 0.92rem;
     font-weight: 600;
-    min-width: 120px;
 }
 
-.profile-value {
-    color: var(--color-text);
-    font-size: 0.94rem;
-    text-align: right;
-    word-break: break-word;
+.profile-menu-sublabel {
+    color: var(--color-muted);
+    font-size: 0.8rem;
+    line-height: 1.35;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.profile-divider {
-    border-top: 2px solid var(--color-border);
+.profile-menu-chevron {
+    color: var(--color-muted);
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+
+/* ----------------------------------------------------------------
+   Edit Form extras
+   ---------------------------------------------------------------- */
+
+.form-divider {
+    border-top: 1px solid var(--color-border);
     margin: 8px 0;
 }
 
-.profile-edit-form {
-    border-top: 1px solid var(--color-border);
-    margin-top: 32px;
-    padding-top: 24px;
+.form-subheading {
+    color: var(--color-text);
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+    margin: 0;
 }
 
-.profile-image-preview {
-    margin-bottom: 8px;
-}
 
-.profile-image-preview img {
-    border-radius: 8px;
-    max-height: 100px;
-    max-width: 100px;
-    object-fit: cover;
+/* ----------------------------------------------------------------
+   Logout form reset (matches base.html pattern)
+   ---------------------------------------------------------------- */
+
+.profile-menu .logout-form {
+    margin: 0;
+    padding: 0;
 }

@@ -10,9 +10,6 @@
 {% block content %}
 <section class="auth-section">
     <div class="auth-card card">
-        <p class="eyebrow">Your account</p>
-        <h1>Profile</h1>
-        <p class="auth-copy">Your personal information associated with AutoLease.</p>
 
         {% if messages %}
             <div class="form-messages">
@@ -22,72 +19,66 @@
             </div>
         {% endif %}
 
-        <div class="profile-info">
-            <div class="profile-row">
-                <span class="profile-label">Email</span>
-                <span class="profile-value">{{ profile_user.email }}</span>
+        {# ---- Header: avatar + name + meta ---- #}
+        <div class="profile-header">
+            <div class="profile-avatar">
+                {{ profile_user.first_name|default:profile_user.username|make_list|first|upper }}
             </div>
-            <div class="profile-row">
-                <span class="profile-label">Username</span>
-                <span class="profile-value">{{ profile_user.username }}</span>
-            </div>
-            {% if profile_user.first_name or profile_user.last_name %}
-            <div class="profile-row">
-                <span class="profile-label">Name</span>
-                <span class="profile-value">{{ profile_user.first_name }} {{ profile_user.last_name }}</span>
-            </div>
-            {% endif %}
-            {% if profile_user.contact_number %}
-            <div class="profile-row">
-                <span class="profile-label">Contact number</span>
-                <span class="profile-value">{{ profile_user.contact_number }}</span>
-            </div>
-            {% endif %}
-            <div class="profile-row">
-                <span class="profile-label">Account type</span>
-                <span class="profile-value">
-                    {% if profile_user.is_agency %}Agency{% elif profile_user.is_renter %}Renter{% else %}—{% endif %}
+            <h1 class="profile-name">
+                {% if profile_user.first_name or profile_user.last_name %}
+                    {{ profile_user.first_name }} {{ profile_user.last_name }}
+                {% else %}
+                    {{ profile_user.username }}
+                {% endif %}
+            </h1>
+            <p class="profile-email">{{ profile_user.email }}</p>
+            <div class="profile-meta">
+                <span class="profile-badge">
+                    {% if profile_user.is_agency %}Agency{% elif profile_user.is_renter %}Renter{% else %}Member{% endif %}
                 </span>
+                {% if profile_user.contact_number %}
+                    <span class="profile-contact">{{ profile_user.contact_number }}</span>
+                {% endif %}
             </div>
-
-            {% if agency_profile %}
-            <div class="profile-divider"></div>
-            <div class="profile-row">
-                <span class="profile-label">Business name</span>
-                <span class="profile-value">{{ agency_profile.business_name }}</span>
-            </div>
-            <div class="profile-row">
-                <span class="profile-label">Business contact</span>
-                <span class="profile-value">{{ agency_profile.contact_number }}</span>
-            </div>
-            {% endif %}
+            <a href="{% url 'userprofile:profile_edit' %}" class="button profile-edit-btn">Edit profile</a>
         </div>
 
-        <form method="post" enctype="multipart/form-data" class="auth-form profile-edit-form">
-            {% csrf_token %}
-            {% if form.non_field_errors %}
-                <div class="form-errors">{{ form.non_field_errors }}</div>
+        {# ---- Menu rows ---- #}
+        <div class="profile-menu">
+
+            {# Account settings #}
+            <a class="profile-menu-row" href="{% url 'usersettings:settings' %}">
+                <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.8"/></svg>
+                <div class="profile-menu-label-group">
+                    <span class="profile-menu-label">Account settings</span>
+                    <span class="profile-menu-sublabel">Notifications and privacy preferences</span>
+                </div>
+                <svg class="profile-menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+
+            {% if agency_profile %}
+            {# Agency details (read-only display) #}
+            <div class="profile-menu-row profile-menu-row--static">
+                <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 21h18M3 7v14m6-14v14m6-14v14m6-14v14M1 7h22M12 3L1 7m22 0L12 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="profile-menu-label-group">
+                    <span class="profile-menu-label">Agency details</span>
+                    <span class="profile-menu-sublabel">{{ agency_profile.business_name }} · {{ agency_profile.contact_number }}</span>
+                </div>
+            </div>
             {% endif %}
 
-            <div class="form-field">
-                <label for="{{ form.bio.id_for_label }}">Bio</label>
-                {{ form.bio }}
-                {{ form.bio.errors }}
-            </div>
+            {# Log out #}
+            <form method="post" action="{% url 'login:logout' %}" class="logout-form">
+                {% csrf_token %}
+                <button type="submit" class="profile-menu-row profile-menu-row--button">
+                    <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="1.8"/><polyline points="16 17 21 12 16 7" stroke="currentColor" stroke-width="1.8"/><line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="1.8"/></svg>
+                    <span class="profile-menu-label">Log out</span>
+                    <svg class="profile-menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </form>
 
-            <div class="form-field">
-                <label for="{{ form.profile_image.id_for_label }}">Profile image</label>
-                {% if profile_user.profile.profile_image %}
-                    <div class="profile-image-preview">
-                        <img src="{{ profile_user.profile.profile_image.url }}" alt="Profile preview">
-                    </div>
-                {% endif %}
-                {{ form.profile_image }}
-                {{ form.profile_image.errors }}
-            </div>
+        </div>
 
-            <button class="button" type="submit">Save profile</button>
-        </form>
     </div>
 </section>
 {% endblock %}

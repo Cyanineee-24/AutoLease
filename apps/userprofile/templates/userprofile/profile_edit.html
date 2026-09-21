@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit profile | AutoLease{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/userprofile/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-card card">
+        <p class="eyebrow">Your account</p>
+        <h1>Edit profile</h1>
+        <p class="auth-copy">Update your personal information.</p>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+
+            {% if user_form.non_field_errors %}
+                <div class="form-errors">{{ user_form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-field">
+                <label for="{{ user_form.first_name.id_for_label }}">First name</label>
+                {{ user_form.first_name }}
+                {{ user_form.first_name.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ user_form.last_name.id_for_label }}">Last name</label>
+                {{ user_form.last_name }}
+                {{ user_form.last_name.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ user_form.contact_number.id_for_label }}">Contact number</label>
+                {{ user_form.contact_number }}
+                {{ user_form.contact_number.errors }}
+            </div>
+
+            {% if agency_form %}
+                <div class="form-divider"></div>
+                <h2 class="form-subheading">Business details</h2>
+
+                {% if agency_form.non_field_errors %}
+                    <div class="form-errors">{{ agency_form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="form-field">
+                    <label for="{{ agency_form.business_name.id_for_label }}">Business name</label>
+                    {{ agency_form.business_name }}
+                    {{ agency_form.business_name.errors }}
+                </div>
+
+                <div class="form-field">
+                    <label for="{{ agency_form.contact_number.id_for_label }}">Business contact</label>
+                    {{ agency_form.contact_number }}
+                    {{ agency_form.contact_number.errors }}
+                </div>
+            {% endif %}
+
+            <button class="button" type="submit">Save changes</button>
+        </form>
+
+        <p class="auth-footer"><a href="{% url 'userprofile:profile' %}">&larr; Cancel</a></p>
+    </div>
+</section>
+{% endblock %}
