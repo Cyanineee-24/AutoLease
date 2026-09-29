@@ -47,6 +47,9 @@ INSTALLED_APPS = [
     'apps.home',
     'apps.userprofile',
     'apps.usersettings',
+    'django.contrib.postgres', 
+    'apps.fleet',
+    'apps.bookings',
 ]
 
 MIDDLEWARE = [
