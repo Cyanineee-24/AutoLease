@@ -32,3 +32,11 @@ planning/
 all_models_compiled_for_submission.zip
 *.zip
 models_submission/
+
+# Prefinal session evidence (submitted via Teams, not committed)
+BASELINE_COMMIT.txt
+GIT_*.txt
+GIT_*.patch
+APPLICATION_SCREENSHOTS/
+GITHUB_SCREENSHOTS/
+*_FINAL_PROJECT/
