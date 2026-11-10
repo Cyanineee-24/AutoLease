@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Review your trip | AutoLease{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mybookings/mybookings.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-card card review-card">
+        <p class="eyebrow">Review your trip</p>
+        <h1>{{ booking.vehicle.year }} {{ booking.vehicle.make }} {{ booking.vehicle.model }}</h1>
+        <p class="auth-copy">{{ booking.start_date|date:"M j" }} – {{ booking.end_date|date:"M j, Y" }} · {{ days }} day{{ days|pluralize }}</p>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+
+            <fieldset class="star-rating-field">
+                <legend>Overall rating</legend>
+                <div class="star-rating">
+                    {% for radio in form.rating %}
+                        <input type="radio" name="{{ form.rating.html_name }}" id="{{ radio.id_for_label }}" value="{{ radio.data.value }}"{% if radio.data.selected %} checked{% endif %}>
+                        <label for="{{ radio.id_for_label }}" title="{{ radio.data.value }} star{{ radio.data.value|pluralize }}">
+                            <span class="visually-hidden">{{ radio.data.value }} star{{ radio.data.value|pluralize }}</span>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        </label>
+                    {% endfor %}
+                </div>
+                {{ form.rating.errors }}
+            </fieldset>
+
+            <div class="form-field">
+                <label for="{{ form.comment.id_for_label }}">Comment (optional)</label>
+                {{ form.comment }}
+                {{ form.comment.errors }}
+            </div>
+
+            <p class="review-privacy-note">Your review shows your first name only.</p>
+            <button class="button" type="submit">Submit review</button>
+        </form>
+
+        <p class="auth-footer"><a href="{% url 'mybookings:list' %}">&larr; Back to my bookings</a></p>
+    </div>
+</section>
+{% endblock %}
