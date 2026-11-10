@@ -29,9 +29,8 @@ class RegistrationViewTests(TestCase):
         self.assertTrue(user.is_renter)
         self.assertFalse(user.is_agency)
         self.assertEqual(user.username, user.email)
-        # assertRedirects followed the redirect to login, where credentials were popped and rendered
+        # assertRedirects followed the redirect to login, where email was popped and rendered
         self.assertContains(response, 'value="renter@example.com"')
-        self.assertContains(response, 'value="A-secure-password-123"')
         self.assertContains(response, 'Account created successfully! Click Log in to continue.')
 
     def test_agency_registration_creates_an_agency_profile(self):
@@ -92,15 +91,17 @@ class LoginViewTests(TestCase):
         )
         self.assertRedirects(response, reverse('home:dashboard'))
 
-    def test_login_renders_prefilled_credentials_and_clears_session(self):
+    def test_login_renders_prefilled_email_and_clears_session(self):
         session = self.client.session
         session['prefill_email'] = 'prefill@example.com'
-        session['prefill_password'] = 'prefill-pass'
         session.save()
 
         response = self.client.get(reverse('login:login'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'value="prefill@example.com"')
-        self.assertContains(response, 'value="prefill-pass"')
+        self.assertContains(
+            response,
+            '<input type="password" name="password" id="id_password" autocomplete="current-password" required>',
+        )
+        self.assertNotContains(response, 'id="id_password" autocomplete="current-password" required value')
         self.assertNotIn('prefill_email', self.client.session)
-        self.assertNotIn('prefill_password', self.client.session)

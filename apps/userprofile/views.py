@@ -2,6 +2,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
+from apps.accounts.models import AgencyProfile
+
 from .forms import AgencyEditForm, ProfileEditForm
 
 
@@ -14,7 +16,7 @@ def profile(request):
     if user.is_agency:
         try:
             context['agency_profile'] = user.agency_profile
-        except user.agency_profile.RelatedObjectDoesNotExist:
+        except AgencyProfile.DoesNotExist:
             pass
 
     return render(request, 'userprofile/profile.html', context)
@@ -29,7 +31,7 @@ def profile_edit(request):
     if user.is_agency:
         try:
             agency_profile = user.agency_profile
-        except user.agency_profile.RelatedObjectDoesNotExist:
+        except AgencyProfile.DoesNotExist:
             pass
 
     if request.method == 'POST':

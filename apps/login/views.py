@@ -12,5 +12,4 @@ class UserLoginView(auth_views.LoginView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['prefill_email'] = self.request.session.pop('prefill_email', '')
-        context['prefill_password'] = self.request.session.pop('prefill_password', '')
         return context

@@ -36,8 +36,7 @@ class ProfileEditViewTests(TestCase):
     def test_profile_edit_requires_login(self):
         """GET /profile/edit/ without authentication → redirect."""
         response = self.client.get(reverse('userprofile:profile_edit'))
-        self.assertNotEqual(response.status_code, 200)
-        self.assertIn('/login', response.url)
+        self.assertRedirects(response, '/login/?next=/profile/edit/', fetch_redirect_response=False)
 
     def test_profile_edit_get_renders_form(self):
         """Authenticated GET → 200 with form fields."""
@@ -90,3 +89,39 @@ class ProfileEditViewTests(TestCase):
         self.agency_profile.refresh_from_db()
         self.assertEqual(self.agency_profile.business_name, 'Updated Motors')
         self.assertEqual(self.agency_profile.contact_number, '09183333333')
+
+    def test_agency_user_without_agency_profile_renders_profile_edit(self):
+        """is_agency=True user WITHOUT an AgencyProfile row gets 200 on profile_edit (no agency form rendered, no crash)."""
+        CustomUser.objects.create_user(
+            username='agency_noprofile@test.com',
+            email='agency_noprofile@test.com',
+            password='testpass123',
+            is_agency=True,
+            first_name='Agency',
+            last_name='NoProfile',
+        )
+        self.client.login(username='agency_noprofile@test.com', password='testpass123')
+        response = self.client.get(reverse('userprofile:profile_edit'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['agency_form'])
+        self.assertNotContains(response, 'Business details')
+
+
+class ProfileViewTests(TestCase):
+    """Tests for the profile read-only view."""
+
+    def test_agency_user_without_agency_profile_renders_profile(self):
+        """is_agency=True user WITHOUT an AgencyProfile row gets 200 on profile (no agency details rendered, no crash)."""
+        CustomUser.objects.create_user(
+            username='agency_noprofile@test.com',
+            email='agency_noprofile@test.com',
+            password='testpass123',
+            is_agency=True,
+            first_name='Agency',
+            last_name='NoProfile',
+        )
+        self.client.login(username='agency_noprofile@test.com', password='testpass123')
+        response = self.client.get(reverse('userprofile:profile'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('agency_profile', response.context)
+        self.assertNotContains(response, 'Agency details')

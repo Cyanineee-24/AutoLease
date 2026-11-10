@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'apps.home',
     'apps.userprofile',
     'apps.usersettings',
-    'django.contrib.postgres', 
+    'django.contrib.postgres',
     'apps.fleet',
     'apps.bookings',
 ]
@@ -149,4 +149,5 @@ MAILERS = {
 }
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
+LOGIN_URL = 'login:login'
 LOGIN_REDIRECT_URL = 'home:dashboard'

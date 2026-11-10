@@ -1,0 +1,58 @@
+<article class="vehicle-card">
+    <div class="vehicle-card-media">
+        {% if vehicle.primary_image %}
+            <img class="vehicle-card-image" src="{{ vehicle.primary_image.image.url }}" alt="{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}" loading="lazy">
+        {% else %}
+            <div class="vehicle-card-placeholder tone-{{ vehicle.placeholder_tone }}">
+                <svg class="placeholder-car-svg" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M5 17h1a2 2 0 0 0 2-2V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2h1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    <circle cx="7" cy="17" r="2" stroke="currentColor" stroke-width="1.2"/>
+                    <circle cx="17" cy="17" r="2" stroke="currentColor" stroke-width="1.2"/>
+                    <path d="M3 11h2M19 11h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+            </div>
+        {% endif %}
+
+        {% if vehicle.is_top_rated %}
+            <span class="chip-top-rated">Top rated</span>
+        {% endif %}
+
+        <form class="favorite-form" method="post" action="{% url 'fleet:favorite_toggle' vehicle.pk %}" data-favorite-form>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="favorite-button{% if vehicle.is_favorited %} is-saved{% endif %}" aria-pressed="{% if vehicle.is_favorited %}true{% else %}false{% endif %}" aria-label="Save {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}">
+                <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </button>
+        </form>
+    </div>
+
+    <div class="vehicle-card-body">
+        <div class="vehicle-card-row vehicle-card-title-row">
+            <span class="vehicle-card-title">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</span>
+            <span class="vehicle-card-rating">
+                {% if vehicle.review_count %}
+                    <svg class="vehicle-star-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span>{{ vehicle.avg_rating|floatformat:1 }}</span>
+                {% else %}
+                    <span class="vehicle-rating-new">New</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class="vehicle-card-row vehicle-card-meta">
+            <span>{{ vehicle.city }} · {{ vehicle.transmission }}</span>
+        </div>
+        <div class="vehicle-card-row vehicle-card-meta">
+            <span>{{ vehicle.seats }} seats · {{ vehicle.fuel_type }}</span>
+        </div>
+        <div class="vehicle-card-row vehicle-card-price-row">
+            <span class="vehicle-card-price">₱{{ vehicle.daily_rate|floatformat:"-2g" }}</span>
+            <span class="vehicle-card-rate-label"> per day</span>
+        </div>
+    </div>
+
+    <a class="vehicle-card-link" href="{% url 'fleet:vehicle_detail' vehicle.pk %}{% if search_qs %}?{{ search_qs }}{% endif %}" aria-label="View {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}"></a>
+</article>

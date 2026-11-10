@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load l10n %}
+{% load static %}
+
+{% block title %}{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} | AutoLease{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/fleet/fleet.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    {# ---- Back link ---- #}
+    <div class="back-nav">
+        <a class="back-link" href="{{ back_url }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            <span>Back to results</span>
+        </a>
+    </div>
+
+    {# ---- Title Row ---- #}
+    <div class="detail-header">
+        <h1 class="detail-title">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h1>
+        <form class="detail-favorite-form" method="post" action="{% url 'fleet:favorite_toggle' vehicle.pk %}" data-favorite-form>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="favorite-button favorite-button-detail{% if vehicle.is_favorited %} is-saved{% endif %}" aria-pressed="{% if vehicle.is_favorited %}true{% else %}false{% endif %}" aria-label="Save {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <span data-favorite-label>{% if vehicle.is_favorited %}Saved{% else %}Save{% endif %}</span>
+            </button>
+        </form>
+    </div>
+
+    {# ---- Gallery ---- #}
+    {% with images=vehicle.gallery_images count=vehicle.gallery_images|length %}
+    <div class="detail-gallery-wrapper">
+        <div class="detail-gallery gallery-count-{{ count }}">
+            {% if count == 0 %}
+                <div class="gallery-tile gallery-tile-hero gallery-tile-placeholder tone-{{ vehicle.placeholder_tone }}">
+                    <svg class="placeholder-car-svg" width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M5 17h1a2 2 0 0 0 2-2V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2h1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                        <circle cx="7" cy="17" r="2" stroke="currentColor" stroke-width="1.2"/>
+                        <circle cx="17" cy="17" r="2" stroke="currentColor" stroke-width="1.2"/>
+                        <path d="M3 11h2M19 11h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            {% else %}
+                {% for img in images|slice:":5" %}
+                    <div class="gallery-tile gallery-tile-{{ forloop.counter }}">
+                        <img src="{{ img.image.url }}" alt="{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} photo {{ forloop.counter }}">
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        {% if count > 5 %}
+            <button id="open-gallery-dialog" class="gallery-show-all-btn" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span>Show all photos</span>
+            </button>
+        {% endif %}
+    </div>
+
+    {% if count > 5 %}
+        <dialog id="gallery-dialog" class="gallery-dialog">
+            <div class="gallery-dialog-header">
+                <button id="close-gallery-dialog" class="gallery-dialog-close" type="button" aria-label="Close dialog">Close</button>
+            </div>
+            <div class="gallery-dialog-content">
+                {% for img in images %}
+                    <div class="gallery-dialog-image-item">
+                        <img src="{{ img.image.url }}" alt="{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} photo {{ forloop.counter }}" loading="lazy">
+                    </div>
+                {% endfor %}
+            </div>
+        </dialog>
+    {% endif %}
+    {% endwith %}
+
+    {# ---- Content Grid ---- #}
+    <div class="detail-content-grid">
+        {# ---- Left Column ---- #}
+        <div class="detail-left-col">
+            <section class="detail-overview">
+                <h2 class="overview-title">{{ vehicle.color }} {{ vehicle.make }} {{ vehicle.model }} in {{ vehicle.city }}</h2>
+                <p class="overview-subline">{{ vehicle.transmission }} · {{ vehicle.fuel_type }} · {{ vehicle.seats }} seats · {{ vehicle.year }}</p>
+                <div class="overview-rating-line">
+                    {% if vehicle.review_count %}
+                        <svg class="vehicle-star-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <span class="overview-rating-val">{{ vehicle.avg_rating|floatformat:1 }}</span>
+                        <span class="overview-rating-dot">·</span>
+                        <span class="overview-review-count">{{ vehicle.review_count }} review{{ vehicle.review_count|pluralize }}</span>
+                    {% else %}
+                        <span class="vehicle-rating-new">New</span>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="detail-host-block">
+                <div class="host-avatar">{{ host_initials }}</div>
+                <div class="host-info">
+                    <div class="host-name">Hosted by {{ vehicle.agency.business_name }}</div>
+                    {% if show_contact and contact_number %}
+                        <div class="host-contact">Contact: {{ contact_number }}</div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="detail-specs-block">
+                <h2 class="section-title">What this car offers</h2>
+                <div class="spec-rows">
+                    <div class="spec-row">
+                        <span class="spec-label">Transmission</span>
+                        <span class="spec-value">{{ vehicle.transmission }}</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Fuel type</span>
+                        <span class="spec-value">{{ vehicle.fuel_type }}</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Seats</span>
+                        <span class="spec-value">{{ vehicle.seats }}</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Color</span>
+                        <span class="spec-value">{{ vehicle.color }}</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Year</span>
+                        <span class="spec-value">{{ vehicle.year }}</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="detail-reviews-block">
+                <h2 class="section-title reviews-heading">
+                    {% if vehicle.review_count %}
+                        <svg class="vehicle-star-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <span>{{ vehicle.avg_rating|floatformat:1 }} · {{ vehicle.review_count }} review{{ vehicle.review_count|pluralize }}</span>
+                    {% else %}
+                        <span>Reviews</span>
+                    {% endif %}
+                </h2>
+
+                {% if reviews %}
+                    <div class="reviews-grid">
+                        {% for review in reviews %}
+                            <article class="review-card">
+                                <div class="review-author-row">
+                                    <span class="review-author">{{ review.reviewer_display_name }}</span>
+                                    <span class="review-date">{{ review.created_at|date:"F Y" }}</span>
+                                </div>
+                                <div class="review-stars-row">
+                                    <svg class="vehicle-star-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                    <span>{{ review.rating }}</span>
+                                </div>
+                                {% if review.comment %}
+                                    <p class="review-comment">{{ review.comment }}</p>
+                                {% endif %}
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="reviews-empty">No reviews yet.</p>
+                {% endif %}
+            </section>
+        </div>
+
+        {# ---- Right Column: Booking Card ---- #}
+        <div class="detail-right-col">
+            <aside class="booking-card" data-rate="{{ vehicle.daily_rate|unlocalize }}">
+                <div class="booking-card-rate-header">
+                    <span class="booking-card-rate">₱{{ vehicle.daily_rate|floatformat:"-2g" }}</span>
+                    <span class="booking-card-rate-suffix"> per day</span>
+                </div>
+
+                <div class="booking-dates-box">
+                    <div class="booking-date-field">
+                        <label for="booking-start-date" class="booking-date-label">PICK-UP</label>
+                        <input id="booking-start-date" class="booking-date-input" type="date" value="{{ start_date }}" min="{{ today|date:'Y-m-d' }}">
+                    </div>
+                    <div class="booking-date-divider"></div>
+                    <div class="booking-date-field">
+                        <label for="booking-end-date" class="booking-date-label">DROP-OFF</label>
+                        <input id="booking-end-date" class="booking-date-input" type="date" value="{{ end_date }}" min="{{ today|date:'Y-m-d' }}">
+                    </div>
+                </div>
+
+                <div id="booking-date-error" class="booking-date-error" style="display: none;"></div>
+
+                <button class="button booking-submit-button" type="button" disabled aria-disabled="true">Booking opens soon</button>
+
+                <p class="booking-helper-text">You won't be charged. The agency reviews your request first.</p>
+
+                <div class="booking-breakdown">
+                    <p id="breakdown-empty" class="breakdown-empty-text">Select your dates to see the total</p>
+                    <div id="breakdown-details" class="breakdown-details" style="display: none;">
+                        <div class="breakdown-row">
+                            <span id="breakdown-rate-line"></span>
+                            <span id="breakdown-line-amount"></span>
+                        </div>
+                        <div class="breakdown-row breakdown-total-row">
+                            <span>Estimated total</span>
+                            <span id="breakdown-total"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="booking-license-note">A driver's license is required to request this car</p>
+            </aside>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/fleet/favorites.js' %}" defer></script>
+<script src="{% static 'js/fleet/vehicle_detail.js' %}" defer></script>
+{% endblock %}

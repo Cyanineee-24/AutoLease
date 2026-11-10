@@ -33,7 +33,7 @@
             </div>
             <div class="form-field">
                 <label for="id_password">Password</label>
-                <input type="password" name="password" id="id_password" autocomplete="current-password" required value="{{ prefill_password|default:'' }}">
+                <input type="password" name="password" id="id_password" autocomplete="current-password" required>
             </div>
             <input type="hidden" name="next" value="{{ next }}">
             <button class="button" type="submit">Log in</button>

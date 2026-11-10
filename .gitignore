@@ -27,3 +27,8 @@ __pycache__/
 AGENTS.md
 docs/
 planning/
+
+# Submissions & Archives
+all_models_compiled_for_submission.zip
+*.zip
+models_submission/

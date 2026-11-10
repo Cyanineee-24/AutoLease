@@ -13,7 +13,6 @@ def register(request):
         if form.is_valid():
             user = form.save()
             request.session['prefill_email'] = form.cleaned_data.get('email')
-            request.session['prefill_password'] = form.cleaned_data.get('password1')
             messages.success(request, 'Account created successfully! Click Log in to continue.')
             return redirect('login:login')
     else:
