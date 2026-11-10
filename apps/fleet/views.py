@@ -9,6 +9,7 @@ from django.views.decorators.http import require_POST
 from apps.bookings.models import Review
 from apps.fleet.forms import VehicleSearchForm
 from apps.fleet.models import Favorite, Vehicle
+from apps.userprofile.models import DriverLicense
 from apps.usersettings.models import UserSettings
 
 
@@ -78,8 +79,13 @@ def vehicle_detail(request, pk):
         renter_first = (review.booking.renter.first_name or '').strip()
         review.reviewer_display_name = renter_first if renter_first else 'Renter'
 
+    is_owner = vehicle.agency.user_id == request.user.pk
+    has_license = DriverLicense.objects.filter(user=request.user).exists()
+
     context = {
         'vehicle': vehicle,
+        'is_owner': is_owner,
+        'has_license': has_license,
         'today': timezone.localdate(),
         'host_initials': host_initials,
         'show_contact': show_contact,

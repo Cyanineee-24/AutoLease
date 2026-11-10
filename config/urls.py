@@ -27,6 +27,7 @@ urlpatterns = [
     path('profile/', include('apps.userprofile.urls')),
     path('settings/', include('apps.usersettings.urls')),
     path('vehicles/', include('apps.fleet.urls')),
+    path('bookings/', include('apps.bookings.urls')),
 ]
 
 if settings.DEBUG:

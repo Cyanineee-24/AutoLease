@@ -183,6 +183,15 @@
         {# ---- Right Column: Booking Card ---- #}
         <div class="detail-right-col">
             <aside class="booking-card" data-rate="{{ vehicle.daily_rate|unlocalize }}">
+                {% if messages %}
+                    <div class="form-messages">
+                        {% for message in messages %}
+                            <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <form method="post" action="{% url 'bookings:request' vehicle.pk %}" class="booking-form">
+                {% csrf_token %}
                 <div class="booking-card-rate-header">
                     <span class="booking-card-rate">₱{{ vehicle.daily_rate|floatformat:"-2g" }}</span>
                     <span class="booking-card-rate-suffix"> per day</span>
@@ -191,18 +200,27 @@
                 <div class="booking-dates-box">
                     <div class="booking-date-field">
                         <label for="booking-start-date" class="booking-date-label">PICK-UP</label>
-                        <input id="booking-start-date" class="booking-date-input" type="date" value="{{ start_date }}" min="{{ today|date:'Y-m-d' }}">
+                        <input id="booking-start-date" name="start_date" class="booking-date-input" type="date" value="{{ start_date }}" min="{{ today|date:'Y-m-d' }}" required>
                     </div>
                     <div class="booking-date-divider"></div>
                     <div class="booking-date-field">
                         <label for="booking-end-date" class="booking-date-label">DROP-OFF</label>
-                        <input id="booking-end-date" class="booking-date-input" type="date" value="{{ end_date }}" min="{{ today|date:'Y-m-d' }}">
+                        <input id="booking-end-date" name="end_date" class="booking-date-input" type="date" value="{{ end_date }}" min="{{ today|date:'Y-m-d' }}" required>
                     </div>
                 </div>
 
                 <div id="booking-date-error" class="booking-date-error" style="display: none;"></div>
 
-                <button class="button booking-submit-button" type="button" disabled aria-disabled="true">Booking opens soon</button>
+                <label for="booking-message" class="booking-message-label">Message to the agency (optional)</label>
+                <textarea id="booking-message" name="renter_message" class="booking-message-input" rows="3" maxlength="1000" placeholder="Pick-up time, purpose of trip, questions..."></textarea>
+
+                {% if is_owner %}
+                    <button class="button booking-submit-button" type="button" disabled>This is your listing</button>
+                {% elif not has_license %}
+                    <button class="button booking-submit-button" type="button" disabled>Driver's license required</button>
+                {% else %}
+                    <button class="button booking-submit-button" type="submit">Request to book</button>
+                {% endif %}
 
                 <p class="booking-helper-text">You won't be charged. The agency reviews your request first.</p>
 
@@ -220,7 +238,12 @@
                     </div>
                 </div>
 
-                <p class="booking-license-note">A driver's license is required to request this car</p>
+                {% if not is_owner and not has_license %}
+                    <p class="booking-license-note">A driver's license is required to request this car. <a href="{% url 'userprofile:profile' %}">Go to your profile</a></p>
+                {% else %}
+                    <p class="booking-license-note">A driver's license is required to request this car</p>
+                {% endif %}
+                </form>
             </aside>
         </div>
     </div>

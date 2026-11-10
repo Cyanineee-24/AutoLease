@@ -692,9 +692,46 @@
 }
 
 .booking-submit-button {
+    width: 100%;
+}
+
+.booking-submit-button:disabled {
     cursor: not-allowed;
     opacity: 0.6;
+}
+
+.booking-card .form-messages {
+    margin-bottom: 16px;
+}
+
+.booking-message-label {
+    color: var(--color-muted);
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin: 0 0 6px;
+}
+
+.booking-message-input {
+    border: 1px solid #B0B0B0;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font: inherit;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    resize: vertical;
     width: 100%;
+}
+
+.booking-message-input:focus {
+    border-color: #222222;
+    outline: none;
+}
+
+.booking-license-note a {
+    color: inherit;
+    font-weight: 600;
 }
 
 .booking-helper-text {
