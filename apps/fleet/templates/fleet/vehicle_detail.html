@@ -239,7 +239,7 @@
                 </div>
 
                 {% if not is_owner and not has_license %}
-                    <p class="booking-license-note">A driver's license is required to request this car. <a href="{% url 'userprofile:profile' %}">Go to your profile</a></p>
+                    <p class="booking-license-note">A driver's license is required to request this car. <a href="{% url 'userprofile:license' %}?next={{ request.path|urlencode }}">Add your license</a></p>
                 {% else %}
                     <p class="booking-license-note">A driver's license is required to request this car</p>
                 {% endif %}

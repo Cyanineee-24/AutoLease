@@ -177,3 +177,10 @@
     margin: 0;
     padding: 0;
 }
+
+/* ---- Driver's license ---- */
+.license-status--ok { color: #1B5E20; }
+.license-status--missing { color: #B71C1C; }
+.license-image-field input[type="file"] { padding: 10px; }
+.license-image-field a { color: var(--color-primary); font-size: 0.85rem; }
+.license-image-hint { color: var(--color-muted); font-size: 0.8rem; }

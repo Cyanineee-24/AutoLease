@@ -1,17 +1,22 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from apps.accounts.models import AgencyProfile
 
-from .forms import AgencyEditForm, ProfileEditForm
+from .forms import AgencyEditForm, DriverLicenseForm, ProfileEditForm
+from .models import DriverLicense
 
 
 @login_required
 def profile(request):
     """Read-only profile view."""
     user = request.user
-    context = {'profile_user': user}
+    context = {
+        'profile_user': user,
+        'driver_license': DriverLicense.objects.filter(user=user).first(),
+    }
 
     if user.is_agency:
         try:
@@ -65,3 +70,30 @@ def profile_edit(request):
         'agency_form': agency_form,
     }
     return render(request, 'userprofile/profile_edit.html', context)
+
+
+@login_required
+def license_edit(request):
+    """Add or replace the user's driver's license (POST -> redirect -> GET)."""
+    license_obj = DriverLicense.objects.filter(user=request.user).first()
+    next_url = request.POST.get('next') or request.GET.get('next', '')
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        next_url = ''
+
+    if request.method == 'POST':
+        form = DriverLicenseForm(request.POST, request.FILES, instance=license_obj)
+        if form.is_valid():
+            driver_license = form.save(commit=False)
+            driver_license.user = request.user
+            driver_license.save()
+            messages.success(request, "Driver's license saved.")
+            return redirect(next_url or 'userprofile:profile')
+    else:
+        form = DriverLicenseForm(instance=license_obj)
+
+    context = {
+        'form': form,
+        'has_license': license_obj is not None,
+        'next': next_url,
+    }
+    return render(request, 'userprofile/license_form.html', context)

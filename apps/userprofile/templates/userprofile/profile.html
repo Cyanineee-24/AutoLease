@@ -56,6 +56,20 @@
                 <svg class="profile-menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </a>
 
+            {# Driver's license #}
+            <a class="profile-menu-row" href="{% url 'userprofile:license' %}">
+                <svg class="profile-menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="12" r="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M13 10h5M13 14h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                <div class="profile-menu-label-group">
+                    <span class="profile-menu-label">Driver's license</span>
+                    {% if driver_license %}
+                        <span class="profile-menu-sublabel license-status license-status--ok">On file · expires {{ driver_license.expiry_date|date:"M j, Y" }}</span>
+                    {% else %}
+                        <span class="profile-menu-sublabel license-status license-status--missing">Not added yet · required to book a car</span>
+                    {% endif %}
+                </div>
+                <svg class="profile-menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+
             {% if agency_profile %}
             {# Agency details (read-only display) #}
             <div class="profile-menu-row profile-menu-row--static">

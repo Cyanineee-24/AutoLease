@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Driver's license | AutoLease{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/userprofile/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-card card">
+        <p class="eyebrow">Your account</p>
+        <h1>{% if has_license %}Update driver's license{% else %}Add driver's license{% endif %}</h1>
+        <p class="auth-copy">Agencies need a valid license on file before they can review your booking requests. Only you and the agency you book with can see it.</p>
+
+        <form method="post" enctype="multipart/form-data" class="auth-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-field">
+                <label for="{{ form.license_number.id_for_label }}">License number</label>
+                {{ form.license_number }}
+                {{ form.license_number.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.issuing_country.id_for_label }}">Issuing country</label>
+                {{ form.issuing_country }}
+                {{ form.issuing_country.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.expiry_date.id_for_label }}">Expiry date</label>
+                {{ form.expiry_date }}
+                {{ form.expiry_date.errors }}
+            </div>
+
+            <div class="form-field license-image-field">
+                <label for="{{ form.license_image.id_for_label }}">Photo of your license</label>
+                {{ form.license_image }}
+                <span class="license-image-hint">A clear photo of the front of your license (JPG or PNG).</span>
+                {{ form.license_image.errors }}
+            </div>
+
+            <button class="button" type="submit">Save license</button>
+        </form>
+
+        <p class="auth-footer"><a href="{% if next %}{{ next }}{% else %}{% url 'userprofile:profile' %}{% endif %}">&larr; Cancel</a></p>
+    </div>
+</section>
+{% endblock %}
