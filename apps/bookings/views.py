@@ -65,4 +65,4 @@ def booking_request(request, vehicle_pk):
         f'Request sent for {days} day{"s" if days != 1 else ""}. '
         'The agency will approve or decline it soon.',
     )
-    return redirect(_detail_url(vehicle))
+    return redirect('mybookings:list')

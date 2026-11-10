@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My bookings | AutoLease{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mybookings/mybookings.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="mybookings-container">
+    <header class="mybookings-header">
+        <h1>My bookings</h1>
+        {% if bookings %}
+            <p class="mybookings-subtitle">{{ bookings|length }} request{{ bookings|length|pluralize }}{% if pending_count %} · {{ pending_count }} awaiting the agency{% endif %}</p>
+        {% endif %}
+    </header>
+
+    {% if messages %}
+        <div class="form-messages">
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if not bookings %}
+        <div class="mybookings-empty">
+            <h2>No trips booked... yet</h2>
+            <p>Find a car you like and send the agency a request.</p>
+            <a class="button" href="{% url 'home:dashboard' %}">Browse cars</a>
+        </div>
+    {% else %}
+        <ul class="mybookings-list">
+            {% for booking in bookings %}
+                {% with vehicle=booking.vehicle image=booking.vehicle.primary_image %}
+                <li class="booking-row">
+                    <a class="booking-thumb booking-thumb--tone-{{ vehicle.placeholder_tone }}" href="{% url 'fleet:vehicle_detail' vehicle.pk %}">
+                        {% if image %}
+                            <img src="{{ image.image.url }}" alt="{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}" loading="lazy">
+                        {% else %}
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17h14M3 13l2-5a2 2 0 0 1 1.9-1.4h10.2A2 2 0 0 1 19 8l2 5v4h-2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+                        {% endif %}
+                    </a>
+
+                    <div class="booking-info">
+                        <div class="booking-title-row">
+                            <a class="booking-title" href="{% url 'fleet:vehicle_detail' vehicle.pk %}">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</a>
+                            <span class="status-badge status-badge--{{ booking.status }}">{{ booking.get_status_display }}</span>
+                        </div>
+                        <p class="booking-meta">{{ vehicle.agency.business_name }} · {{ vehicle.city }}</p>
+                        <p class="booking-dates">
+                            {{ booking.start_date|date:"M j, Y" }} – {{ booking.end_date|date:"M j, Y" }}
+                            <span class="booking-days">· {{ booking.days }} day{{ booking.days|pluralize }}</span>
+                        </p>
+                        <p class="booking-price">₱{{ booking.daily_rate_snapshot|floatformat:"-2g" }} × {{ booking.days }} = <strong>₱{{ booking.total|floatformat:"-2g" }}</strong></p>
+
+                        {% if booking.renter_message %}
+                            <p class="booking-note"><span class="booking-note-label">Your message:</span> {{ booking.renter_message }}</p>
+                        {% endif %}
+                        {% if booking.agency_response %}
+                            <p class="booking-note booking-note--agency"><span class="booking-note-label">Agency reply:</span> {{ booking.agency_response }}</p>
+                        {% endif %}
+
+                        <p class="booking-requested">Requested {{ booking.created_at|date:"M j, Y" }}{% if booking.decided_at %} · decided {{ booking.decided_at|date:"M j, Y" }}{% endif %}</p>
+                    </div>
+
+                    {% if booking.status == 'pending' %}
+                        <form method="post" action="{% url 'mybookings:cancel' booking.pk %}" class="booking-actions" data-confirm="Cancel this request?">
+                            {% csrf_token %}
+                            <button type="submit" class="button-outline">Cancel request</button>
+                        </form>
+                    {% endif %}
+                </li>
+                {% endwith %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/mybookings/mybookings.js' %}" defer></script>
+{% endblock %}

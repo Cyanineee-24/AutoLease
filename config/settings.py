@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'apps.fleet',
     'apps.bookings',
+    'apps.mybookings',
 ]
 
 MIDDLEWARE = [
