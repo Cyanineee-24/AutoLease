@@ -55,6 +55,16 @@
                                 <span class="dropdown-label">Contact support</span>
                             </a>
                             <div class="dropdown-divider"></div>
+                            <a class="nav-dropdown-item" href="{% url 'mybookings:list' %}">
+                                <svg class="dropdown-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                                <span class="dropdown-label">My bookings</span>
+                            </a>
+                            {% if user.is_agency %}
+                                <a class="nav-dropdown-item" href="{% url 'agencyrequests:inbox' %}">
+                                    <svg class="dropdown-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6l3.5-7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                                    <span class="dropdown-label">Booking requests</span>
+                                </a>
+                            {% endif %}
                             <a class="nav-dropdown-item" href="{% url 'userprofile:profile' %}">
                                 <svg class="dropdown-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                                 <span class="dropdown-label">Profile</span>
