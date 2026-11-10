@@ -12,7 +12,7 @@
     align-items: center;
     display: flex;
     flex-direction: column;
-    padding: 8px 0 24px;
+    padding: 12px 0 28px;
     text-align: center;
 }
 
@@ -29,23 +29,50 @@
     width: 72px;
 }
 
-.profile-name {
+/* .auth-card h1 in site.css is 2rem; scope here so the profile size wins. */
+.auth-card .profile-name {
     font-size: 1.5rem;
-    letter-spacing: -0.03em;
-    margin: 16px 0 0;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    margin: 20px 0 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+/* No name yet: the email stands in, so keep it calm and let it wrap at "@" / "." */
+.auth-card .profile-name--email {
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.profile-add-name {
+    color: var(--color-primary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-top: 6px;
+}
+
+.profile-add-name:hover,
+.profile-add-name:focus-visible {
+    text-decoration: underline;
 }
 
 .profile-email {
     color: var(--color-muted);
     font-size: 0.92rem;
-    margin: 4px 0 0;
+    margin: 6px 0 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 
 .profile-meta {
     align-items: center;
     display: flex;
-    gap: 12px;
-    margin-top: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 16px;
 }
 
 .profile-badge {
@@ -64,7 +91,7 @@
 }
 
 .profile-edit-btn {
-    margin-top: 20px;
+    margin-top: 24px;
     width: 100%;
 }
 

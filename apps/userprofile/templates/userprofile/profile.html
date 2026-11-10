@@ -24,14 +24,13 @@
             <div class="profile-avatar">
                 {{ profile_user.first_name|default:profile_user.username|make_list|first|upper }}
             </div>
-            <h1 class="profile-name">
-                {% if profile_user.first_name or profile_user.last_name %}
-                    {{ profile_user.first_name }} {{ profile_user.last_name }}
-                {% else %}
-                    {{ profile_user.username }}
-                {% endif %}
-            </h1>
-            <p class="profile-email">{{ profile_user.email }}</p>
+            {% if profile_user.first_name or profile_user.last_name %}
+                <h1 class="profile-name">{{ profile_user.first_name }} {{ profile_user.last_name }}</h1>
+                <p class="profile-email">{{ profile_user.email }}</p>
+            {% else %}
+                <h1 class="profile-name profile-name--email">{{ profile_user.email|default:profile_user.username }}</h1>
+                <a class="profile-add-name" href="{% url 'userprofile:profile_edit' %}">Add your name</a>
+            {% endif %}
             <div class="profile-meta">
                 <span class="profile-badge">
                     {% if profile_user.is_agency %}Agency{% elif profile_user.is_renter %}Renter{% else %}Member{% endif %}
