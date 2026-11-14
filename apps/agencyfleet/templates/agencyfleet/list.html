@@ -70,6 +70,7 @@
 
                         <div class="listing-actions">
                             <a class="button-outline button-compact" href="{% url 'agencyfleet:edit' vehicle.pk %}">Edit</a>
+                            <a class="button-outline button-compact" href="{% url 'agencyfleet:photos' vehicle.pk %}">Photos ({{ vehicle.images.all|length }})</a>
                             <form method="post" action="{% url 'agencyfleet:status' vehicle.pk %}" class="listing-status-form">
                                 {% csrf_token %}
                                 <label for="status-{{ vehicle.pk }}" class="sr-only">Status for {{ vehicle.make }} {{ vehicle.model }}</label>

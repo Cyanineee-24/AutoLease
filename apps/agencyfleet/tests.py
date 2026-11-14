@@ -1,17 +1,31 @@
 import datetime
+import io
+import shutil
+import tempfile
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
-from django.test import TestCase
+from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from PIL import Image
 
 from apps.accounts.models import AgencyProfile
 from apps.bookings.models import Booking
-from apps.fleet.models import Vehicle
+from apps.fleet.models import Vehicle, VehicleImage
 
 User = get_user_model()
+
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(prefix='agencyfleet-tests-')
+
+
+def png_upload(name='car.png', padding=0):
+    buffer = io.BytesIO()
+    Image.new('RGB', (8, 8), 'red').save(buffer, 'PNG')
+    return SimpleUploadedFile(name, buffer.getvalue() + b'\0' * padding, content_type='image/png')
 
 
 def messages_text(response):
@@ -166,7 +180,10 @@ class CreateVehicleTests(AgencyFleetTestBase):
     def test_valid_post_creates_available_car_owned_by_agency(self):
         response = self.post_create()
         vehicle = Vehicle.objects.get(model='Xpander')
-        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response, reverse('agencyfleet:photos', args=[vehicle.pk]), fetch_redirect_response=False,
+        )
+        self.assertIn('Add photos so renters can see it.', messages_text(response))
         self.assertEqual(vehicle.agency, self.agency_profile)
         self.assertEqual(vehicle.status, 'available')
         self.assertEqual(vehicle.make, 'Mitsubishi')
@@ -377,3 +394,120 @@ class DeleteVehicleTests(AgencyFleetTestBase):
         response = self.client.post(reverse('agencyfleet:delete', args=[self.other_vehicle.pk]))
         self.assertEqual(response.status_code, 404)
         self.assertTrue(Vehicle.objects.filter(pk=self.other_vehicle.pk).exists())
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class PhotoTests(AgencyFleetTestBase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        self.login_agency()
+        self.photos_url = reverse('agencyfleet:photos', args=[self.vehicle.pk])
+
+    def upload(self, upload=None, vehicle=None):
+        url = reverse('agencyfleet:photos', args=[vehicle.pk]) if vehicle else self.photos_url
+        return self.client.post(url, {'image': upload or png_upload()})
+
+    def test_page_renders(self):
+        response = self.client.get(self.photos_url)
+        self.assertContains(response, '0 of 10 photos')
+        self.assertContains(response, 'enctype="multipart/form-data"')
+
+    def test_first_upload_becomes_primary_second_does_not(self):
+        self.assertRedirects(self.upload(), self.photos_url, fetch_redirect_response=False)
+        self.upload()
+        first, second = VehicleImage.objects.filter(vehicle=self.vehicle).order_by('id')
+        self.assertTrue(first.is_primary)
+        self.assertFalse(second.is_primary)
+        self.assertEqual(second.sort_order, first.sort_order + 1)
+        self.assertTrue(first.image.name.startswith('fleet/vehicles/'))
+        self.assertTrue(default_storage.exists(first.image.name))
+
+    def test_set_primary_leaves_exactly_one(self):
+        self.upload()
+        self.upload()
+        self.upload()
+        target = VehicleImage.objects.filter(vehicle=self.vehicle).order_by('id').last()
+        response = self.client.post(reverse('agencyfleet:photo_primary', args=[self.vehicle.pk, target.pk]))
+        self.assertRedirects(response, self.photos_url, fetch_redirect_response=False)
+        primaries = VehicleImage.objects.filter(vehicle=self.vehicle, is_primary=True)
+        self.assertEqual(list(primaries), [target])
+
+    def test_deleting_primary_promotes_next_and_removes_file(self):
+        self.upload()
+        self.upload()
+        self.upload()
+        first, second, third = VehicleImage.objects.filter(vehicle=self.vehicle).order_by('id')
+        self.client.post(reverse('agencyfleet:photo_delete', args=[self.vehicle.pk, first.pk]))
+        self.assertFalse(VehicleImage.objects.filter(pk=first.pk).exists())
+        self.assertFalse(default_storage.exists(first.image.name))
+        second.refresh_from_db()
+        third.refresh_from_db()
+        self.assertTrue(second.is_primary)
+        self.assertFalse(third.is_primary)
+
+    def test_eleventh_upload_refused(self):
+        for _ in range(10):
+            self.upload()
+        response = self.client.get(self.photos_url)
+        self.assertNotContains(response, 'type="file"')
+        self.assertContains(response, 'the most allowed')
+
+        response = self.upload()
+        self.assertIn('up to 10 photos', messages_text(response))
+        self.assertEqual(VehicleImage.objects.filter(vehicle=self.vehicle).count(), 10)
+
+    def test_non_image_file_rejected(self):
+        fake = SimpleUploadedFile('car.png', b'definitely not an image', content_type='image/png')
+        response = self.upload(fake)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('image', response.context['form'].errors)
+        self.assertFalse(VehicleImage.objects.filter(vehicle=self.vehicle).exists())
+
+    def test_wrong_extension_and_oversize_rejected(self):
+        for upload, message in (
+            (png_upload('car.gif'), 'Use a JPG, PNG or WebP image.'),
+            (png_upload(padding=5 * 1024 * 1024), 'Photos must be 5 MB or smaller.'),
+        ):
+            with self.subTest(message=message):
+                response = self.upload(upload)
+                self.assertContains(response, message)
+        self.assertFalse(VehicleImage.objects.filter(vehicle=self.vehicle).exists())
+
+    def test_other_agency_car_and_image_404(self):
+        self.assertEqual(self.client.get(reverse('agencyfleet:photos', args=[self.other_vehicle.pk])).status_code, 404)
+        self.assertEqual(self.upload(vehicle=self.other_vehicle).status_code, 404)
+
+        other_image = VehicleImage.objects.create(vehicle=self.other_vehicle, image=png_upload(), is_primary=True)
+        self.upload()
+        own_image = VehicleImage.objects.get(vehicle=self.vehicle)
+        urls = [
+            # Other agency's car and image.
+            reverse('agencyfleet:photo_primary', args=[self.other_vehicle.pk, other_image.pk]),
+            reverse('agencyfleet:photo_delete', args=[self.other_vehicle.pk, other_image.pk]),
+            # Own car, but an image belonging to another car.
+            reverse('agencyfleet:photo_primary', args=[self.vehicle.pk, other_image.pk]),
+            reverse('agencyfleet:photo_delete', args=[self.vehicle.pk, other_image.pk]),
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.post(url).status_code, 404)
+        self.assertTrue(VehicleImage.objects.filter(pk=other_image.pk, is_primary=True).exists())
+        own_image.refresh_from_db()
+        self.assertTrue(own_image.is_primary)
+
+    def test_deleting_car_removes_photo_files(self):
+        self.upload()
+        name = VehicleImage.objects.get(vehicle=self.vehicle).image.name
+        self.client.post(reverse('agencyfleet:delete', args=[self.vehicle.pk]))
+        self.assertFalse(Vehicle.objects.filter(pk=self.vehicle.pk).exists())
+        self.assertFalse(default_storage.exists(name))
+
+    def test_list_shows_photo_count_and_image(self):
+        self.upload()
+        response = self.client.get(reverse('agencyfleet:list'))
+        self.assertContains(response, 'Photos (1)')
+        self.assertContains(response, 'class="listing-image"')

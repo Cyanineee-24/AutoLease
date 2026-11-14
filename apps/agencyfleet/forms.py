@@ -2,6 +2,7 @@ import re
 from decimal import Decimal
 
 from django import forms
+from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 
 from apps.fleet.models import Vehicle
@@ -88,3 +89,28 @@ class VehicleForm(forms.ModelForm):
         if duplicates.exists():
             raise forms.ValidationError('Another car already uses this plate number.')
         return plate
+
+
+MAX_PHOTOS_PER_CAR = 10
+MAX_PHOTO_BYTES = 5 * 1024 * 1024
+PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
+
+
+class VehiclePhotoForm(forms.Form):
+    """One photo per submit. ImageField makes Pillow confirm it's a real image."""
+
+    image = forms.ImageField(
+        label='Add a photo',
+        validators=[FileExtensionValidator(PHOTO_EXTENSIONS, message='Use a JPG, PNG or WebP image.')],
+        widget=forms.FileInput(attrs={'accept': '.jpg,.jpeg,.png,.webp'}),
+        error_messages={
+            'required': 'Choose a photo to upload.',
+            'invalid_image': "That file isn't an image we can read. Use a JPG, PNG or WebP photo.",
+        },
+    )
+
+    def clean_image(self):
+        image = self.cleaned_data['image']
+        if image.size > MAX_PHOTO_BYTES:
+            raise forms.ValidationError('Photos must be 5 MB or smaller.')
+        return image

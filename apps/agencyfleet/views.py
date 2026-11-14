@@ -1,16 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.accounts.decorators import agency_required
 from apps.bookings.models import Booking
-from apps.fleet.models import Vehicle
+from apps.fleet.models import Vehicle, VehicleImage
 
-from .forms import VehicleForm
+from .forms import MAX_PHOTOS_PER_CAR, VehicleForm, VehiclePhotoForm
 
 NO_LONGER_AVAILABLE_RESPONSE = 'This car is no longer available.'
 STATUS_LABELS = dict(Vehicle.STATUS_CHOICES)
@@ -59,8 +59,8 @@ def create(request):
             vehicle = form.save(commit=False)
             vehicle.agency = request.user.agency_profile
             vehicle.save()
-            messages.success(request, 'Car added.')
-            return redirect('agencyfleet:list')
+            messages.success(request, 'Car added. Add photos so renters can see it.')
+            return redirect('agencyfleet:photos', pk=vehicle.pk)
     else:
         form = VehicleForm()
     context = {'form': form, 'is_edit': False, 'page_title': 'Add a car'}
@@ -157,3 +157,74 @@ def delete(request, pk):
         image.image.delete(save=False)
     messages.success(request, 'Car deleted.')
     return redirect('agencyfleet:list')
+
+
+def _owned_image(vehicle, image_pk):
+    return get_object_or_404(VehicleImage, pk=image_pk, vehicle=vehicle)
+
+
+@login_required
+@agency_required
+def photos(request, pk):
+    vehicle = _owned_vehicle(request, pk)
+    form = VehiclePhotoForm()
+
+    if request.method == 'POST':
+        if vehicle.images.count() >= MAX_PHOTOS_PER_CAR:
+            messages.error(request, f'A car can have up to {MAX_PHOTOS_PER_CAR} photos. Delete one to add another.')
+            return redirect('agencyfleet:photos', pk=vehicle.pk)
+        form = VehiclePhotoForm(request.POST, request.FILES)
+        if form.is_valid():
+            with transaction.atomic():
+                current = vehicle.images.aggregate(max_order=Max('sort_order'))['max_order']
+                VehicleImage.objects.create(
+                    vehicle=vehicle,
+                    image=form.cleaned_data['image'],
+                    sort_order=0 if current is None else current + 1,
+                    is_primary=not vehicle.images.filter(is_primary=True).exists(),
+                )
+            messages.success(request, 'Photo added.')
+            return redirect('agencyfleet:photos', pk=vehicle.pk)
+
+    images = vehicle.gallery_images
+    context = {
+        'vehicle': vehicle,
+        'images': images,
+        # The photo renters see first (gallery order), even if none is flagged.
+        'main_image_id': images[0].pk if images else None,
+        'form': form,
+        'can_upload': len(images) < MAX_PHOTOS_PER_CAR,
+        'max_photos': MAX_PHOTOS_PER_CAR,
+    }
+    return render(request, 'agencyfleet/photos.html', context)
+
+
+@login_required
+@agency_required
+@require_POST
+def photo_primary(request, pk, image_pk):
+    vehicle = _owned_vehicle(request, pk)
+    image = _owned_image(vehicle, image_pk)
+    with transaction.atomic():
+        vehicle.images.update(is_primary=False)
+        VehicleImage.objects.filter(pk=image.pk).update(is_primary=True)
+    messages.success(request, 'Main photo updated.')
+    return redirect('agencyfleet:photos', pk=vehicle.pk)
+
+
+@login_required
+@agency_required
+@require_POST
+def photo_delete(request, pk, image_pk):
+    vehicle = _owned_vehicle(request, pk)
+    image = _owned_image(vehicle, image_pk)
+    with transaction.atomic():
+        image.delete()
+        if image.is_primary:
+            successor = vehicle.images.order_by('sort_order', 'id').first()
+            if successor:
+                successor.is_primary = True
+                successor.save(update_fields=['is_primary'])
+    image.image.delete(save=False)
+    messages.success(request, 'Photo deleted.')
+    return redirect('agencyfleet:photos', pk=vehicle.pk)
