@@ -31,3 +31,26 @@ class AuthPromptModalTests(TestCase):
         self.assertNotContains(response, 'id="auth-prompt"')
         self.assertNotContains(response, 'auth_prompt.css')
         self.assertNotContains(response, 'auth_prompt.js')
+
+
+class LoginToSignUpLinkTests(TestCase):
+    def test_register_link_carries_next(self):
+        response = self.client.get(reverse('login:login') + '?next=/vehicles/1/')
+        self.assertContains(
+            response,
+            f'<a href="{reverse("register:register")}?next=%2Fvehicles%2F1%2F">Create an account</a>',
+            html=True,
+        )
+
+    def test_register_link_plain_without_next(self):
+        response = self.client.get(reverse('login:login'))
+        self.assertContains(
+            response,
+            f'<a href="{reverse("register:register")}">Create an account</a>',
+            html=True,
+        )
+
+    def test_offsite_next_not_carried(self):
+        # LoginView only exposes a safe next to the template.
+        response = self.client.get(reverse('login:login') + '?next=https://evil.com/')
+        self.assertNotContains(response, 'evil.com')
