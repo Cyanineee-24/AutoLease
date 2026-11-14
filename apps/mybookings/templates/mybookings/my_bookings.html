@@ -58,18 +58,27 @@
                         {% if booking.renter_message %}
                             <p class="booking-note"><span class="booking-note-label">Your message:</span> {{ booking.renter_message }}</p>
                         {% endif %}
-                        {% if booking.agency_response %}
+                        {% if booking.agency_reason %}
+                            <p class="booking-note booking-note--agency"><span class="booking-note-label">Agency's reason:</span> {{ booking.agency_reason }}</p>
+                        {% elif booking.agency_response %}
                             <p class="booking-note booking-note--agency"><span class="booking-note-label">Agency reply:</span> {{ booking.agency_response }}</p>
                         {% endif %}
 
                         <p class="booking-requested">Requested {{ booking.created_at|date:"M j, Y" }}{% if booking.decided_at %} · decided {{ booking.decided_at|date:"M j, Y" }}{% endif %}</p>
                     </div>
 
-                    {% if booking.status == 'pending' %}
-                        <form method="post" action="{% url 'mybookings:cancel' booking.pk %}" class="booking-actions" data-confirm="Cancel this request?">
-                            {% csrf_token %}
-                            <button type="submit" class="button-outline">Cancel request</button>
-                        </form>
+                    {% if booking.can_cancel %}
+                        {% if booking.status == 'pending' %}
+                            <form method="post" action="{% url 'mybookings:cancel' booking.pk %}" class="booking-actions" data-confirm="Cancel this request?">
+                                {% csrf_token %}
+                                <button type="submit" class="button-outline">Cancel request</button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{% url 'mybookings:cancel' booking.pk %}" class="booking-actions" data-confirm="Cancel this trip? The agency will be told and the dates will open up for others.">
+                                {% csrf_token %}
+                                <button type="submit" class="button-outline">Cancel trip</button>
+                            </form>
+                        {% endif %}
                     {% elif booking.can_review %}
                         <a class="button button-small" href="{% url 'mybookings:review' booking.pk %}">Leave a review</a>
                     {% elif booking.my_review %}

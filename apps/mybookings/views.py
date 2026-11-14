@@ -5,7 +5,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.bookings.lifecycle import display_status
+from apps.bookings.lifecycle import agency_cancel_reason, can_cancel, display_status
 from apps.bookings.models import Booking, Review
 
 from .forms import ReviewForm
@@ -33,6 +33,8 @@ def my_bookings(request):
         booking.days = (booking.end_date - booking.start_date).days + 1
         booking.total = booking.daily_rate_snapshot * booking.days
         booking.status_key, booking.status_label = display_status(booking, today)
+        booking.can_cancel = can_cancel(booking, today)
+        booking.agency_reason = agency_cancel_reason(booking)
         try:
             booking.my_review = booking.review
         except Review.DoesNotExist:
@@ -53,14 +55,28 @@ def my_bookings(request):
 @login_required
 @require_POST
 def cancel_booking(request, pk):
-    booking = get_object_or_404(Booking, pk=pk, renter=request.user)
-    if booking.status != 'pending':
-        messages.error(request, 'Only pending requests can be cancelled.')
+    booking = get_object_or_404(Booking.objects.select_related('vehicle'), pk=pk, renter=request.user)
+    if not can_cancel(booking, timezone.localdate()):
+        if booking.status == 'approved':
+            messages.error(request, "This trip has already started, so it can't be cancelled.")
+        else:
+            messages.error(request, 'Only pending requests and upcoming trips can be cancelled.')
         return redirect('mybookings:list')
 
+    was_approved = booking.status == 'approved'
+    # The no-overlap constraint only covers approved bookings, so this frees the dates.
     booking.status = 'cancelled'
     booking.save(update_fields=['status', 'updated_at'])
-    messages.success(request, f'Request for the {booking.vehicle.make} {booking.vehicle.model} was cancelled.')
+
+    vehicle_name = f'{booking.vehicle.make} {booking.vehicle.model}'
+    if was_approved:
+        start = booking.start_date
+        messages.success(
+            request,
+            f'Your trip in the {vehicle_name} on {start:%b} {start.day} was cancelled. The dates are open again.',
+        )
+    else:
+        messages.success(request, f'Request for the {vehicle_name} was cancelled.')
     return redirect('mybookings:list')
 
 
