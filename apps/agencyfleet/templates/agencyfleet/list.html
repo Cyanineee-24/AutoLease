@@ -83,6 +83,12 @@
                             {% if vehicle.status == 'available' %}
                                 <a class="listing-link" href="{% url 'fleet:vehicle_detail' vehicle.pk %}">View listing</a>
                             {% endif %}
+                            {% if not vehicle.booking_count %}
+                                <form method="post" action="{% url 'agencyfleet:delete' vehicle.pk %}" class="listing-delete-form" data-confirm="Delete the {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}? This can't be undone.">
+                                    {% csrf_token %}
+                                    <button type="submit" class="listing-delete-button">Delete</button>
+                                </form>
+                            {% endif %}
                         </div>
                     </div>
                 </li>
@@ -90,4 +96,8 @@
         </ul>
     {% endif %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/agencyfleet/agencyfleet.js' %}" defer></script>
 {% endblock %}

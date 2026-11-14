@@ -344,3 +344,36 @@ class ApproveUnavailableCarTests(AgencyFleetTestBase):
         self.client.post(reverse('agencyrequests:decide', args=[booking.pk]), {'action': 'approve'})
         booking.refresh_from_db()
         self.assertEqual(booking.status, 'approved')
+
+
+class DeleteVehicleTests(AgencyFleetTestBase):
+    def test_refused_when_any_booking_exists(self):
+        for status in ('declined', 'cancelled', 'completed'):
+            with self.subTest(status=status):
+                Booking.objects.filter(vehicle=self.vehicle).delete()
+                self.make_booking(self.vehicle, -9, -8, status)
+                self.login_agency()
+                response = self.client.post(reverse('agencyfleet:delete', args=[self.vehicle.pk]))
+                self.assertIn("Cars with booking history can't be deleted.", messages_text(response))
+                self.assertTrue(Vehicle.objects.filter(pk=self.vehicle.pk).exists())
+
+    def test_delete_button_hidden_when_bookings_exist(self):
+        self.make_booking(self.vehicle, -9, -8, 'declined')
+        self.login_agency()
+        response = self.client.get(reverse('agencyfleet:list'))
+        self.assertNotContains(response, reverse('agencyfleet:delete', args=[self.vehicle.pk]))
+
+    def test_works_with_no_bookings(self):
+        self.login_agency()
+        self.assertContains(self.client.get(reverse('agencyfleet:list')), reverse('agencyfleet:delete', args=[self.vehicle.pk]))
+        response = self.client.post(reverse('agencyfleet:delete', args=[self.vehicle.pk]))
+        self.assertRedirects(response, reverse('agencyfleet:list'), fetch_redirect_response=False)
+        self.assertIn('Car deleted.', messages_text(response))
+        self.assertFalse(Vehicle.objects.filter(pk=self.vehicle.pk).exists())
+
+    def test_get_not_allowed_and_other_agency_404(self):
+        self.login_agency()
+        self.assertEqual(self.client.get(reverse('agencyfleet:delete', args=[self.vehicle.pk])).status_code, 405)
+        response = self.client.post(reverse('agencyfleet:delete', args=[self.other_vehicle.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Vehicle.objects.filter(pk=self.other_vehicle.pk).exists())

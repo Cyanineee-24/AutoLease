@@ -138,3 +138,22 @@ def change_status(request, pk):
     note = f' {declined} pending request{"s were" if declined != 1 else " was"} declined.' if declined else ''
     messages.success(request, f'The {name} is now {label}.{note}')
     return redirect('agencyfleet:list')
+
+
+@login_required
+@agency_required
+@require_POST
+def delete(request, pk):
+    vehicle = _owned_vehicle(request, pk)
+    if vehicle.bookings.exists():
+        messages.error(request, "Cars with booking history can't be deleted. Set it to Unavailable instead.")
+        return redirect('agencyfleet:list')
+
+    images = list(vehicle.images.all())
+    # Row first (Favorite and VehicleImage rows cascade), files second, so a
+    # failed delete never leaves a car pointing at missing files.
+    vehicle.delete()
+    for image in images:
+        image.image.delete(save=False)
+    messages.success(request, 'Car deleted.')
+    return redirect('agencyfleet:list')
