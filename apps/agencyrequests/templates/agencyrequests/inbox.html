@@ -12,7 +12,7 @@
     <header class="inbox-header">
         <p class="eyebrow">Agency</p>
         <h1>Booking requests</h1>
-        <p class="inbox-subtitle">{{ pending|length }} awaiting your decision</p>
+        <p class="inbox-subtitle">{{ pending|length }} awaiting your decision · {{ active|length }} upcoming trip{{ active|length|pluralize }}</p>
     </header>
 
     {% if messages %}
@@ -70,7 +70,49 @@
         </ul>
     {% endif %}
 
-    {% if decided %}
+    {% if active %}
+        <h2 class="inbox-section-title">Upcoming trips</h2>
+        <ul class="request-list">
+            {% for booking in active %}
+                <li class="request-card">
+                    <div class="request-main">
+                        <div class="request-renter">
+                            <span class="request-avatar">{{ booking.renter_name|make_list|first|upper }}</span>
+                            <div>
+                                <p class="request-renter-name">{{ booking.renter_name }}</p>
+                                {% if booking.renter.contact_number %}
+                                    <p class="request-renter-contact">{{ booking.renter.contact_number }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <p class="request-vehicle">
+                            {{ booking.vehicle.year }} {{ booking.vehicle.make }} {{ booking.vehicle.model }}
+                            <span class="request-plate">{{ booking.vehicle.plate_number }}</span>
+                        </p>
+                        <p class="request-dates">{{ booking.start_date|date:"D, M j" }} – {{ booking.end_date|date:"D, M j, Y" }} · {{ booking.days }} day{{ booking.days|pluralize }}</p>
+                        <p class="request-total">₱{{ booking.daily_rate_snapshot|floatformat:"-2g" }} × {{ booking.days }} = <strong>₱{{ booking.total|floatformat:"-2g" }}</strong></p>
+                        <p class="request-trip-status"><span class="status-badge status-badge--{{ booking.status_key }}">{{ booking.status_label }}</span></p>
+                    </div>
+
+                    {% if booking.phase == 'upcoming' %}
+                        <form method="post" action="{% url 'agencyrequests:cancel' booking.pk %}" class="request-decision" data-confirm="Cancel this trip? The renter will see your reason.">
+                            {% csrf_token %}
+                            <label for="cancel-reason-{{ booking.pk }}" class="request-response-label">Reason for cancelling (the renter will see this)</label>
+                            <textarea id="cancel-reason-{{ booking.pk }}" name="reason" rows="3" maxlength="1000" required class="request-response-input" placeholder="e.g. The car failed its safety inspection."></textarea>
+                            <div class="request-buttons">
+                                <button type="submit" class="button-outline">Cancel trip</button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <p class="request-trip-note">Trip in progress. It can't be cancelled.</p>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if history %}
         <h2 class="inbox-section-title">History</h2>
         <div class="history-table-wrap">
             <table class="history-table">
@@ -84,7 +126,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for booking in decided %}
+                    {% for booking in history %}
                         <tr>
                             <td>{{ booking.renter_name }}</td>
                             <td>{{ booking.vehicle.make }} {{ booking.vehicle.model }}</td>
@@ -98,4 +140,8 @@
         </div>
     {% endif %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/agencyrequests/agencyrequests.js' %}" defer></script>
 {% endblock %}

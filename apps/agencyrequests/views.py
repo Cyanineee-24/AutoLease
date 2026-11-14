@@ -6,10 +6,10 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.accounts.decorators import agency_required
-from apps.bookings.lifecycle import display_status
+from apps.bookings.lifecycle import AGENCY_CANCEL_PREFIX, display_status, trip_phase
 from apps.bookings.models import Booking
 
-from .forms import DecisionForm
+from .forms import CancelTripForm, DecisionForm
 
 AUTO_DECLINE_RESPONSE = 'Dates no longer available'
 
@@ -29,17 +29,21 @@ def inbox(request):
     today = timezone.localdate()
     for booking in bookings:
         booking.status_key, booking.status_label = display_status(booking, today)
+        booking.phase = trip_phase(booking, today)
         booking.days = (booking.end_date - booking.start_date).days + 1
         booking.total = booking.daily_rate_snapshot * booking.days
         booking.renter_name = _renter_name(booking.renter)
 
     pending = [b for b in bookings if b.status == 'pending']
-    decided = sorted(
-        (b for b in bookings if b.status != 'pending'),
+    # Upcoming and in-progress trips; already sorted by start_date above.
+    active = [b for b in bookings if b.status == 'approved' and b.end_date >= today]
+    active_ids = {b.pk for b in active}
+    history = sorted(
+        (b for b in bookings if b.status != 'pending' and b.pk not in active_ids),
         key=lambda b: b.decided_at or b.updated_at,
         reverse=True,
     )
-    context = {'pending': pending, 'decided': decided}
+    context = {'pending': pending, 'active': active, 'history': history}
     return render(request, 'agencyrequests/inbox.html', context)
 
 
@@ -104,4 +108,40 @@ def decide(request, pk):
 
     note = f' {auto_declined} overlapping request{"s were" if auto_declined != 1 else " was"} declined automatically.' if auto_declined else ''
     messages.success(request, f'Approved the request for the {vehicle_name}.{note}')
+    return redirect('agencyrequests:inbox')
+
+
+@login_required
+@agency_required
+@require_POST
+def cancel_trip(request, pk):
+    booking = get_object_or_404(
+        Booking.objects.select_related('vehicle', 'renter'),
+        pk=pk,
+        vehicle__agency__user=request.user,
+    )
+    today = timezone.localdate()
+    if booking.status != 'approved':
+        messages.error(request, 'Only upcoming trips can be cancelled.')
+        return redirect('agencyrequests:inbox')
+    if today >= booking.start_date:
+        messages.error(request, "This trip has already started, so it can't be cancelled.")
+        return redirect('agencyrequests:inbox')
+
+    form = CancelTripForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, form.errors['reason'][0])
+        return redirect('agencyrequests:inbox')
+
+    # decided_at stays as the approval time. The no-overlap constraint only
+    # covers approved bookings, so this frees the dates.
+    booking.status = 'cancelled'
+    booking.agency_response = AGENCY_CANCEL_PREFIX + form.cleaned_data['reason']
+    booking.save(update_fields=['status', 'agency_response', 'updated_at'])
+
+    messages.success(
+        request,
+        f"Cancelled {_renter_name(booking.renter)}'s trip in the "
+        f'{booking.vehicle.make} {booking.vehicle.model}. The dates are open again.',
+    )
     return redirect('agencyrequests:inbox')

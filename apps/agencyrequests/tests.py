@@ -8,9 +8,9 @@ class InboxHistoryStatusLabelTests(BookingStatusTestBase):
         self.client.force_login(self.agency_user)
         response = self.client.get(reverse('agencyrequests:inbox'))
         self.assertEqual(response.status_code, 200)
-        decided = response.context['decided']
+        rows = response.context['active'] + response.context['history']
         self.assertEqual(
-            {b.pk: (b.status_key, b.status_label) for b in decided},
+            {b.pk: (b.status_key, b.status_label) for b in rows},
             {
                 self.future_trip.pk: ('upcoming', 'Upcoming'),
                 self.current_trip.pk: ('in_progress', 'In progress'),

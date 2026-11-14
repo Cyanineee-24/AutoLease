@@ -42,6 +42,8 @@
 .request-total { font-size: 0.95rem; }
 .request-message { background: #F7F7F7; border-radius: 8px; font-size: 0.9rem; font-style: italic; margin-top: 10px !important; padding: 8px 12px; }
 .request-received { color: var(--color-muted); font-size: 0.8rem; margin-top: 10px !important; }
+.request-trip-status { margin-top: 10px !important; }
+.request-trip-note { align-self: center; color: var(--color-muted); font-size: 0.9rem; margin: 0; }
 
 .request-decision { display: flex; flex-direction: column; }
 .request-response-label { color: var(--color-muted); font-size: 0.78rem; font-weight: 600; margin-bottom: 6px; }
