@@ -29,10 +29,9 @@ class SavedCarsTestBase(TestCase):
             business_name='Cebu City Wheels',
             contact_number='0917 111 2222',
         )
-        cls.agency_settings = UserSettings.objects.create(
-            user=cls.agency_user,
-            show_contact_number=True,
-        )
+        # The post_save signal already created this row; just set the flag.
+        UserSettings.objects.filter(user=cls.agency_user).update(show_contact_number=True)
+        cls.agency_settings = UserSettings.objects.get(user=cls.agency_user)
 
         cls.renter_user = User.objects.create_user(
             username='renter@example.com',

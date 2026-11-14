@@ -1,0 +1,12 @@
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+from .models import Profile
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='userprofile_create_profile')
+def create_profile(sender, instance, created, raw, **kwargs):
+    """Every user gets exactly one Profile row (ERD). Skipped for fixture loads."""
+    if created and not raw:
+        Profile.objects.get_or_create(user=instance)
