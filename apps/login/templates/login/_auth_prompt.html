@@ -1,0 +1,27 @@
+{# Login prompt for guests. Included once in base.html for anonymous users only. #}
+<dialog id="auth-prompt" class="auth-prompt" aria-labelledby="auth-prompt-title" data-login-url="{% url 'login:login' %}" data-register-url="{% url 'register:register' %}">
+    <div class="auth-prompt-body">
+        <button type="button" class="auth-prompt-close" aria-label="Close" data-auth-prompt-close>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+
+        <div class="auth-prompt-icon" data-auth-prompt-icon>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+
+        <template data-auth-icon="save"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20.5l-1.3-1.2C6 15.1 3 12.4 3 9a4.5 4.5 0 0 1 4.5-4.5c1.7 0 3.4.8 4.5 2.1 1.1-1.3 2.8-2.1 4.5-2.1A4.5 4.5 0 0 1 21 9c0 3.4-3 6.1-7.7 10.3L12 20.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></template>
+        <template data-auth-icon="book"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></template>
+        <template data-auth-icon="contact"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 4h3.5l1.5 4-2 1.5a11 11 0 0 0 6.5 6.5l1.5-2 4 1.5V19a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></template>
+        <template data-auth-icon="user"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></template>
+
+        <p id="auth-prompt-title" class="auth-prompt-title">Log in to continue</p>
+        <p class="auth-prompt-text">Create a free account or log in to save cars, request bookings, and contact agencies.</p>
+
+        <div class="auth-prompt-actions">
+            <a id="auth-prompt-login" class="button auth-prompt-btn" href="{% url 'login:login' %}">Log in</a>
+            <a id="auth-prompt-signup" class="auth-prompt-btn auth-prompt-btn--outline" href="{% url 'register:register' %}">Sign up</a>
+        </div>
+
+        <p class="auth-prompt-footer">Browsing is free. You'll come right back to this car.</p>
+    </div>
+</dialog>

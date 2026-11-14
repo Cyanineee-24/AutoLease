@@ -111,6 +111,11 @@
     <main>
         {% block content %}{% endblock %}
     </main>
+    {% if not user.is_authenticated %}
+        <link rel="stylesheet" href="{% static 'css/login/auth_prompt.css' %}">
+        {% include 'login/_auth_prompt.html' %}
+        <script src="{% static 'js/login/auth_prompt.js' %}" defer></script>
+    {% endif %}
     <script src="{% static 'js/nav.js' %}" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
