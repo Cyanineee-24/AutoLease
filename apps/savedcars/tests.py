@@ -134,12 +134,12 @@ class SavedListTests(SavedCarsTestBase):
     def test_no_n_plus_one(self):
         self.client.force_login(self.renter_user)
         self.save_car(self.renter_user, self.vios, minutes_ago=1)
-        with self.assertNumQueries(4):
-            # session + user, the vehicle query, the images prefetch
+        with self.assertNumQueries(5):
+            # session + user, nav avatar (user.profile), the vehicle query, the images prefetch
             self.client.get(self.url)
         self.save_car(self.renter_user, self.city, minutes_ago=2)
         self.save_car(self.renter_user, self.almera, minutes_ago=3)
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(5):
             self.client.get(self.url)
 
 

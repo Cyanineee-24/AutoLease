@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static userprofile_tags %}
 
 {% block title %}Profile | AutoLease{% endblock %}
 
@@ -21,15 +21,26 @@
 
         {# ---- Header: avatar + name + meta ---- #}
         <div class="profile-header">
+            {% with photo_url=profile_user|avatar_url %}
+            {% if photo_url %}
+                <div class="profile-avatar profile-avatar--photo">
+                    <img src="{{ photo_url }}" alt="Profile photo">
+                </div>
+            {% else %}
             <div class="profile-avatar">
                 {{ profile_user.first_name|default:profile_user.username|make_list|first|upper }}
             </div>
+            {% endif %}
+            {% endwith %}
             {% if profile_user.first_name or profile_user.last_name %}
                 <h1 class="profile-name">{{ profile_user.first_name }} {{ profile_user.last_name }}</h1>
                 <p class="profile-email">{{ profile_user.email }}</p>
             {% else %}
                 <h1 class="profile-name profile-name--email">{{ profile_user.email|default:profile_user.username }}</h1>
                 <a class="profile-add-name" href="{% url 'userprofile:profile_edit' %}">Add your name</a>
+            {% endif %}
+            {% if profile.bio %}
+                <p class="profile-bio">{{ profile.bio|linebreaksbr }}</p>
             {% endif %}
             <div class="profile-meta">
                 <span class="profile-badge">

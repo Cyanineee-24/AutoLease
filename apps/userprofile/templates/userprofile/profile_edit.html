@@ -14,7 +14,7 @@
         <h1>Edit profile</h1>
         <p class="auth-copy">Update your personal information.</p>
 
-        <form method="post" class="auth-form">
+        <form method="post" enctype="multipart/form-data" class="auth-form">
             {% csrf_token %}
 
             {% if user_form.non_field_errors %}
@@ -37,6 +37,46 @@
                 <label for="{{ user_form.contact_number.id_for_label }}">Contact number</label>
                 {{ user_form.contact_number }}
                 {{ user_form.contact_number.errors }}
+            </div>
+
+            <div class="form-divider"></div>
+            <h2 class="form-subheading">About you</h2>
+
+            {% if profile_form.non_field_errors %}
+                <div class="form-errors">{{ profile_form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-field profile-photo-field">
+                <label for="{{ profile_form.profile_image.id_for_label }}">Profile photo</label>
+                <div class="profile-photo-row">
+                    {% if current_image_url %}
+                        <div class="profile-avatar profile-avatar--photo profile-avatar--small">
+                            <img src="{{ current_image_url }}" alt="Profile photo">
+                        </div>
+                    {% else %}
+                        <div class="profile-avatar profile-avatar--small">
+                            {{ user.first_name|default:user.username|make_list|first|upper }}
+                        </div>
+                    {% endif %}
+                    <div class="profile-photo-controls">
+                        <input type="file" name="{{ profile_form.profile_image.html_name }}" id="{{ profile_form.profile_image.id_for_label }}" accept=".jpg,.jpeg,.png,.webp">
+                        {% if current_image_url %}
+                            <label class="profile-photo-clear" for="{{ profile_form.profile_image.id_for_label }}-clear">
+                                <input type="checkbox" name="{{ profile_form.profile_image.html_name }}-clear" id="{{ profile_form.profile_image.id_for_label }}-clear">
+                                Remove current photo
+                            </label>
+                        {% endif %}
+                    </div>
+                </div>
+                <span class="profile-field-hint">JPG, PNG or WebP, up to 2 MB.</span>
+                {{ profile_form.profile_image.errors }}
+            </div>
+
+            <div class="form-field">
+                <label for="{{ profile_form.bio.id_for_label }}">Bio <span class="optional">(optional)</span></label>
+                {{ profile_form.bio }}
+                <span class="profile-field-hint">Max 500 characters.</span>
+                {{ profile_form.bio.errors }}
             </div>
 
             {% if agency_form %}

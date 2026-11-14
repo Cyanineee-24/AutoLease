@@ -132,6 +132,18 @@ a { color: inherit; text-decoration: none; }
     background: var(--color-muted);
 }
 
+.avatar-circle--photo {
+    background: var(--color-border);
+    overflow: hidden;
+}
+
+.avatar-circle--photo img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
 
 /* ---- Dropdown menu ---- */
 

@@ -1,4 +1,4 @@
-{% load static %}
+{% load static userprofile_tags %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -31,9 +31,17 @@
                         </svg>
                         {# Avatar #}
                         {% if user.is_authenticated %}
+                            {% with nav_avatar_url=user|avatar_url %}
+                            {% if nav_avatar_url %}
+                                <span class="avatar-circle avatar-circle--photo">
+                                    <img src="{{ nav_avatar_url }}" alt="Profile photo">
+                                </span>
+                            {% else %}
                             <span class="avatar-circle">
                                 {{ user.first_name|default:user.username|make_list|first|upper }}
                             </span>
+                            {% endif %}
+                            {% endwith %}
                         {% else %}
                             <span class="avatar-circle avatar-guest">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
