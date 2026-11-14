@@ -243,3 +243,104 @@ class EditVehicleTests(AgencyFleetTestBase):
         self.assertEqual(self.client.post(url, VALID_VEHICLE_DATA).status_code, 404)
         self.other_vehicle.refresh_from_db()
         self.assertEqual(self.other_vehicle.model, 'City')
+
+
+class StatusChangeTests(AgencyFleetTestBase):
+    def post_status(self, status, vehicle=None):
+        self.login_agency()
+        vehicle = vehicle or self.vehicle
+        return self.client.post(reverse('agencyfleet:status', args=[vehicle.pk]), {'status': status})
+
+    def test_get_not_allowed(self):
+        self.login_agency()
+        response = self.client.get(reverse('agencyfleet:status', args=[self.vehicle.pk]))
+        self.assertEqual(response.status_code, 405)
+
+    def test_blocked_when_approved_booking_ends_today(self):
+        self.make_booking(self.vehicle, -2, 0, 'approved')
+        response = self.post_status('maintenance')
+        self.assertRedirects(response, reverse('agencyfleet:list'), fetch_redirect_response=False)
+        self.assertIn('This car has 1 upcoming trip.', messages_text(response))
+        self.vehicle.refresh_from_db()
+        self.assertEqual(self.vehicle.status, 'available')
+
+    def test_blocked_when_approved_booking_in_future(self):
+        self.make_booking(self.vehicle, 5, 7, 'approved')
+        self.make_booking(self.vehicle, 10, 12, 'approved')
+        response = self.post_status('unavailable')
+        self.assertIn('This car has 2 upcoming trips.', messages_text(response))
+        self.vehicle.refresh_from_db()
+        self.assertEqual(self.vehicle.status, 'available')
+
+    def test_allowed_when_only_approved_booking_is_past(self):
+        self.make_booking(self.vehicle, -5, -1, 'approved')
+        self.post_status('unavailable')
+        self.vehicle.refresh_from_db()
+        self.assertEqual(self.vehicle.status, 'unavailable')
+
+    def test_allowed_change_declines_future_pending_requests(self):
+        future_pending = self.make_booking(self.vehicle, 3, 4, 'pending')
+        ongoing_pending = self.make_booking(self.vehicle, -1, 1, 'pending')
+        past_pending = self.make_booking(self.vehicle, -9, -8, 'pending')
+        other_car_pending = self.make_booking(self.other_vehicle, 3, 4, 'pending')
+
+        response = self.post_status('maintenance')
+        self.assertIn('2 pending requests were declined.', messages_text(response))
+
+        for booking in (future_pending, ongoing_pending):
+            booking.refresh_from_db()
+            self.assertEqual(booking.status, 'declined')
+            self.assertEqual(booking.agency_response, 'This car is no longer available.')
+            self.assertIsNotNone(booking.decided_at)
+        past_pending.refresh_from_db()
+        other_car_pending.refresh_from_db()
+        self.assertEqual(past_pending.status, 'pending')
+        self.assertEqual(other_car_pending.status, 'pending')
+
+    def test_invalid_status_rejected(self):
+        response = self.post_status('sold')
+        self.assertIn('Choose Available, Unavailable or Maintenance.', messages_text(response))
+        self.vehicle.refresh_from_db()
+        self.assertEqual(self.vehicle.status, 'available')
+
+    def test_back_to_available_always_allowed(self):
+        self.vehicle.status = 'maintenance'
+        self.vehicle.save()
+        self.make_booking(self.vehicle, 5, 7, 'approved')
+        self.post_status('available')
+        self.vehicle.refresh_from_db()
+        self.assertEqual(self.vehicle.status, 'available')
+
+    def test_other_agency_car_404(self):
+        response = self.post_status('maintenance', vehicle=self.other_vehicle)
+        self.assertEqual(response.status_code, 404)
+        self.other_vehicle.refresh_from_db()
+        self.assertEqual(self.other_vehicle.status, 'available')
+
+
+class ApproveUnavailableCarTests(AgencyFleetTestBase):
+    def test_approve_refused_when_vehicle_not_available(self):
+        booking = self.make_booking(self.vehicle, 3, 5, 'pending')
+        self.vehicle.status = 'maintenance'
+        self.vehicle.save()
+        self.login_agency()
+        response = self.client.post(reverse('agencyrequests:decide', args=[booking.pk]), {'action': 'approve'})
+        self.assertIn('This car is not available right now.', messages_text(response))
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, 'pending')
+
+    def test_decline_still_works_when_vehicle_not_available(self):
+        booking = self.make_booking(self.vehicle, 3, 5, 'pending')
+        self.vehicle.status = 'unavailable'
+        self.vehicle.save()
+        self.login_agency()
+        self.client.post(reverse('agencyrequests:decide', args=[booking.pk]), {'action': 'decline'})
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, 'declined')
+
+    def test_approve_still_works_when_vehicle_available(self):
+        booking = self.make_booking(self.vehicle, 3, 5, 'pending')
+        self.login_agency()
+        self.client.post(reverse('agencyrequests:decide', args=[booking.pk]), {'action': 'approve'})
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, 'approved')

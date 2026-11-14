@@ -58,6 +58,10 @@ def decide(request, pk):
         return redirect('agencyrequests:inbox')
 
     action = form.cleaned_data['action']
+    if action == 'approve' and booking.vehicle.status != 'available':
+        messages.error(request, 'This car is not available right now. Set it to Available in My listings first.')
+        return redirect('agencyrequests:inbox')
+
     now = timezone.now()
     booking.agency_response = form.cleaned_data['agency_response']
     booking.decided_at = now

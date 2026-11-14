@@ -56,6 +56,11 @@
 .button-outline:hover { background: #F7F7F7; }
 .button-compact { font-size: 0.85rem; padding: 6px 12px; }
 
+.listing-status-form { align-items: center; display: inline-flex; gap: 6px; }
+.listing-status-select { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; font: inherit; font-size: 0.85rem; padding: 6px 8px; }
+.listing-status-select:focus { border-color: var(--color-primary); outline: 2px solid rgba(230, 30, 77, 0.18); }
+.sr-only { border: 0; clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; width: 1px; }
+
 /* ---- Add / edit form ---- */
 .listings-container--narrow { max-width: 760px; }
 .listings-back { color: var(--color-muted); display: inline-block; font-size: 0.9rem; font-weight: 600; margin-bottom: 16px; }
