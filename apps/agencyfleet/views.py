@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from apps.accounts.decorators import agency_required
 from apps.bookings.models import Booking
+from apps.bookings.notifications import notify_decision
 from apps.fleet.models import Vehicle, VehicleImage
 
 from .forms import MAX_PHOTOS_PER_CAR, VehicleForm, VehiclePhotoForm
@@ -128,16 +129,23 @@ def change_status(request, pk):
     with transaction.atomic():
         vehicle.status = new_status
         vehicle.save(update_fields=['status', 'updated_at'])
-        declined = Booking.objects.filter(
-            vehicle=vehicle,
-            status='pending',
-            end_date__gte=today,
-        ).update(
+        # Ids first, so the emails go to exactly the bookings this update declines.
+        declined_ids = list(
+            Booking.objects.filter(
+                vehicle=vehicle,
+                status='pending',
+                end_date__gte=today,
+            ).values_list('pk', flat=True)
+        )
+        declined = Booking.objects.filter(pk__in=declined_ids, status='pending').update(
             status='declined',
             agency_response=NO_LONGER_AVAILABLE_RESPONSE,
             decided_at=now,
             updated_at=now,
         )
+
+    for declined_booking in Booking.objects.filter(pk__in=declined_ids).select_related('vehicle__agency', 'renter'):
+        notify_decision(declined_booking, request)
 
     note = f' {declined} pending request{"s were" if declined != 1 else " was"} declined.' if declined else ''
     messages.success(request, f'The {name} is now {label}.{note}')

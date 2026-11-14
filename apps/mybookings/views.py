@@ -7,6 +7,7 @@ from django.views.decorators.http import require_POST
 
 from apps.bookings.lifecycle import agency_cancel_reason, can_cancel, display_status
 from apps.bookings.models import Booking, Review
+from apps.bookings.notifications import notify_cancelled_by_renter
 
 from .forms import ReviewForm
 
@@ -55,7 +56,7 @@ def my_bookings(request):
 @login_required
 @require_POST
 def cancel_booking(request, pk):
-    booking = get_object_or_404(Booking.objects.select_related('vehicle'), pk=pk, renter=request.user)
+    booking = get_object_or_404(Booking.objects.select_related('vehicle__agency__user', 'renter'), pk=pk, renter=request.user)
     if not can_cancel(booking, timezone.localdate()):
         if booking.status == 'approved':
             messages.error(request, "This trip has already started, so it can't be cancelled.")
@@ -70,6 +71,7 @@ def cancel_booking(request, pk):
 
     vehicle_name = f'{booking.vehicle.make} {booking.vehicle.model}'
     if was_approved:
+        notify_cancelled_by_renter(booking, request)
         start = booking.start_date
         messages.success(
             request,

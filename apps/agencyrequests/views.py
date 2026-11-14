@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 from apps.accounts.decorators import agency_required
 from apps.bookings.lifecycle import AGENCY_CANCEL_PREFIX, display_status, trip_phase
 from apps.bookings.models import Booking
+from apps.bookings.notifications import notify_cancelled_by_agency, notify_decision
 
 from .forms import CancelTripForm, DecisionForm
 
@@ -52,7 +53,7 @@ def inbox(request):
 @require_POST
 def decide(request, pk):
     booking = get_object_or_404(
-        Booking.objects.select_related('vehicle'),
+        Booking.objects.select_related('vehicle__agency', 'renter'),
         pk=pk,
         vehicle__agency__user=request.user,
     )
@@ -77,6 +78,7 @@ def decide(request, pk):
     if action == 'decline':
         booking.status = 'declined'
         booking.save(update_fields=['status', 'agency_response', 'decided_at', 'updated_at'])
+        notify_decision(booking, request)
         messages.success(request, f'Declined the request for the {vehicle_name}.')
         return redirect('agencyrequests:inbox')
 
@@ -84,7 +86,8 @@ def decide(request, pk):
     try:
         with transaction.atomic():
             booking.save(update_fields=['status', 'agency_response', 'decided_at', 'updated_at'])
-            auto_declined = (
+            # Ids first, so the emails go to exactly the bookings this update declines.
+            overlapping_ids = list(
                 Booking.objects.filter(
                     vehicle=booking.vehicle,
                     status='pending',
@@ -92,12 +95,13 @@ def decide(request, pk):
                     end_date__gte=booking.start_date,
                 )
                 .exclude(pk=booking.pk)
-                .update(
-                    status='declined',
-                    agency_response=AUTO_DECLINE_RESPONSE,
-                    decided_at=now,
-                    updated_at=now,
-                )
+                .values_list('pk', flat=True)
+            )
+            auto_declined = Booking.objects.filter(pk__in=overlapping_ids, status='pending').update(
+                status='declined',
+                agency_response=AUTO_DECLINE_RESPONSE,
+                decided_at=now,
+                updated_at=now,
             )
     except IntegrityError:
         messages.error(
@@ -105,6 +109,10 @@ def decide(request, pk):
             f'Could not approve: the {vehicle_name} is already booked for some of those dates.',
         )
         return redirect('agencyrequests:inbox')
+
+    notify_decision(booking, request)
+    for declined_booking in Booking.objects.filter(pk__in=overlapping_ids).select_related('vehicle__agency', 'renter'):
+        notify_decision(declined_booking, request)
 
     note = f' {auto_declined} overlapping request{"s were" if auto_declined != 1 else " was"} declined automatically.' if auto_declined else ''
     messages.success(request, f'Approved the request for the {vehicle_name}.{note}')
@@ -116,7 +124,7 @@ def decide(request, pk):
 @require_POST
 def cancel_trip(request, pk):
     booking = get_object_or_404(
-        Booking.objects.select_related('vehicle', 'renter'),
+        Booking.objects.select_related('vehicle__agency', 'renter'),
         pk=pk,
         vehicle__agency__user=request.user,
     )
@@ -138,6 +146,7 @@ def cancel_trip(request, pk):
     booking.status = 'cancelled'
     booking.agency_response = AGENCY_CANCEL_PREFIX + form.cleaned_data['reason']
     booking.save(update_fields=['status', 'agency_response', 'updated_at'])
+    notify_cancelled_by_agency(booking, request)
 
     messages.success(
         request,

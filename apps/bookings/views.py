@@ -11,6 +11,7 @@ from apps.fleet.models import Vehicle
 from apps.userprofile.models import DriverLicense
 
 from .forms import BookingRequestForm
+from .notifications import notify_new_request
 
 
 def _detail_url(vehicle, start='', end=''):
@@ -59,6 +60,7 @@ def booking_request(request, vehicle_pk):
         messages.error(request, 'Those dates are no longer available. Please pick other dates.')
         return redirect(_detail_url(vehicle, start, end))
 
+    notify_new_request(booking, request)
     days = (booking.end_date - booking.start_date).days + 1
     messages.success(
         request,
