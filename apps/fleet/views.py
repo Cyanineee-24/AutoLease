@@ -41,7 +41,6 @@ def favorite_toggle(request, pk):
     return redirect('fleet:vehicle_detail', pk=vehicle.pk)
 
 
-@login_required
 def vehicle_detail(request, pk):
     vehicle = get_object_or_404(
         Vehicle.objects.available()
@@ -82,17 +81,19 @@ def vehicle_detail(request, pk):
         renter_first = (review.booking.renter.first_name or '').strip()
         review.reviewer_display_name = renter_first if renter_first else 'Renter'
 
-    is_owner = vehicle.agency.user_id == request.user.pk
-    has_license = DriverLicense.objects.filter(user=request.user).exists()
+    is_guest = not request.user.is_authenticated
+    is_owner = not is_guest and vehicle.agency.user_id == request.user.pk
+    # Filtering by AnonymousUser raises, so guests skip the query.
+    has_license = not is_guest and DriverLicense.objects.filter(user=request.user).exists()
 
     context = {
         'vehicle': vehicle,
+        'is_guest': is_guest,
         'is_owner': is_owner,
         'has_license': has_license,
         'today': timezone.localdate(),
         'host_initials': host_initials,
         'show_contact': show_contact,
-        'contact_number': contact_number,
         'reviews': reviews,
         'daily_rate': vehicle.daily_rate,
         'back_url': back_url,
@@ -100,4 +101,9 @@ def vehicle_detail(request, pk):
         'start_date': start_date,
         'end_date': end_date,
     }
+    if is_guest:
+        # Guests never receive the number, only a hint that one exists.
+        context['has_contact'] = show_contact and bool(contact_number)
+    else:
+        context['contact_number'] = contact_number
     return render(request, 'fleet/vehicle_detail.html', context)

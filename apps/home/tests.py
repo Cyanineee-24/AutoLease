@@ -11,10 +11,10 @@ User = get_user_model()
 
 
 class DashboardAccessTests(TestCase):
-    def test_dashboard_requires_login(self):
-        """GET /dashboard/ unauthenticated redirects to /login/?next=/dashboard/."""
+    def test_dashboard_open_to_guests(self):
+        """GET /dashboard/ unauthenticated renders the browse page."""
         response = self.client.get(reverse('home:dashboard'))
-        self.assertRedirects(response, '/login/?next=/dashboard/', fetch_redirect_response=False)
+        self.assertEqual(response.status_code, 200)
 
 
 class DashboardViewTests(TestCase):

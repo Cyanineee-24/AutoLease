@@ -292,10 +292,10 @@ class VehiclePriceDisplayTests(FleetTestBase):
 
 
 class VehicleDetailViewTests(FleetTestBase):
-    def test_login_required(self):
+    def test_open_to_guests(self):
         url = reverse('fleet:vehicle_detail', args=[self.vehicle.pk])
         response = self.client.get(url)
-        self.assertRedirects(response, f'/login/?next={url}', fetch_redirect_response=False)
+        self.assertEqual(response.status_code, 200)
 
     def test_status_200_for_available_and_404_for_unavailable_or_maintenance(self):
         self.client.force_login(self.renter_user)
