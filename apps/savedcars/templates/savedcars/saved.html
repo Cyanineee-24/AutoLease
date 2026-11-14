@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saved | AutoLease{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/fleet/fleet.css' %}">
+<link rel="stylesheet" href="{% static 'css/savedcars/savedcars.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="saved-container">
+    <header class="saved-header">
+        <p class="eyebrow">Your account</p>
+        <h1>Saved</h1>
+        <p class="saved-subtitle">{{ saved_count }} saved car{{ saved_count|pluralize }}</p>
+    </header>
+
+    {% if messages %}
+        <div class="form-messages">
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if not saved_count %}
+        <div class="saved-empty">
+            <p>No saved cars yet. Tap the heart on any car to save it here.</p>
+            <a class="button button-small" href="{% url 'home:dashboard' %}">Browse cars</a>
+        </div>
+    {% endif %}
+
+    {% if available %}
+        <div class="vehicles-grid">
+            {% for vehicle in available %}
+                {% include 'fleet/_vehicle_card.html' with vehicle=vehicle %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if unavailable %}
+        <h2 class="saved-section-title">No longer available</h2>
+        <ul class="saved-unavailable-list">
+            {% for vehicle in unavailable %}
+                <li class="saved-unavailable-card">
+                    <div class="saved-unavailable-media">
+                        {% if vehicle.primary_image %}
+                            <img src="{{ vehicle.primary_image.image.url }}" alt="{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}" loading="lazy">
+                        {% else %}
+                            <div class="vehicle-card-placeholder tone-{{ vehicle.placeholder_tone }}">
+                                <svg class="placeholder-car-svg" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <path d="M5 17h1a2 2 0 0 0 2-2V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2h1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                    <circle cx="7" cy="17" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                    <circle cx="17" cy="17" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                    <path d="M3 11h2M19 11h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="saved-unavailable-body">
+                        <p class="saved-unavailable-title">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</p>
+                        <p class="saved-unavailable-meta">{{ vehicle.city }}</p>
+                        <p class="saved-unavailable-meta">Not available right now</p>
+                    </div>
+                    <form method="post" action="{% url 'fleet:favorite_toggle' vehicle.pk %}" class="saved-remove-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'savedcars:list' %}">
+                        <button type="submit" class="saved-remove-button" aria-label="Remove {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} from saved">Remove</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/fleet/favorites.js' %}" defer></script>
+{% endblock %}

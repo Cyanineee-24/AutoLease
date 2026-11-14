@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'apps.mybookings',
     'apps.agencyrequests',
     'apps.agencyfleet',
+    'apps.savedcars',
 ]
 
 MIDDLEWARE = [
