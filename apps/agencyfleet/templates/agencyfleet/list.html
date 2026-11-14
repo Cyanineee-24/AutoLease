@@ -16,6 +16,7 @@
             <h1>My listings</h1>
             <p class="listings-subtitle">{{ vehicles|length }} car{{ vehicles|length|pluralize }} · {{ available_count }} available</p>
         </div>
+        <a class="button button-small" href="{% url 'agencyfleet:create' %}">Add a car</a>
     </header>
 
     {% if messages %}
@@ -29,6 +30,7 @@
     {% if not vehicles %}
         <div class="listings-empty">
             <p>You haven't listed any cars yet.</p>
+            <a class="button button-small" href="{% url 'agencyfleet:create' %}">Add your first car</a>
         </div>
     {% else %}
         <ul class="listing-list">
@@ -67,6 +69,7 @@
                         {% endif %}
 
                         <div class="listing-actions">
+                            <a class="button-outline button-compact" href="{% url 'agencyfleet:edit' vehicle.pk %}">Edit</a>
                             {% if vehicle.status == 'available' %}
                                 <a class="listing-link" href="{% url 'fleet:vehicle_detail' vehicle.pk %}">View listing</a>
                             {% endif %}

@@ -6,4 +6,6 @@ app_name = 'agencyfleet'
 
 urlpatterns = [
     path('', views.listings, name='list'),
+    path('new/', views.create, name='create'),
+    path('<int:pk>/edit/', views.edit, name='edit'),
 ]

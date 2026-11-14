@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} | AutoLease{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/agencyfleet/agencyfleet.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="listings-container listings-container--narrow">
+    <a class="listings-back" href="{% url 'agencyfleet:list' %}">&larr; My listings</a>
+
+    <div class="card vehicle-form-card">
+        <p class="eyebrow">Agency</p>
+        <h1>{{ page_title }}</h1>
+        <p class="listings-subtitle">{% if is_edit %}Update what renters see on this listing.{% else %}New cars are listed as Available. You can add photos next.{% endif %}</p>
+
+        <form method="post" class="vehicle-form" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="vehicle-form-grid">
+                {% for field in form %}
+                    <div class="form-field{% if field.errors %} has-error{% endif %}">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if is_edit and field.name == 'daily_rate' %}
+                            <span class="form-hint">Existing bookings keep the price they were made at.</span>
+                        {% endif %}
+                        {{ field.errors }}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="vehicle-form-actions">
+                <a class="listing-link" href="{% url 'agencyfleet:list' %}">Cancel</a>
+                <button class="button" type="submit">{% if is_edit %}Save changes{% else %}Add car{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

@@ -137,3 +137,109 @@ class ListingsPageTests(AgencyFleetTestBase):
         self.other_vehicle.delete()
         response = self.client.get(reverse('agencyfleet:list'))
         self.assertContains(response, "You haven't listed any cars yet.")
+
+
+VALID_VEHICLE_DATA = {
+    'make': '  Mitsubishi ',
+    'model': 'Xpander',
+    'year': '2023',
+    'plate_number': '  nbc   4567 ',
+    'transmission': 'Automatic',
+    'fuel_type': 'Gasoline',
+    'seats': '7',
+    'color': 'Gray',
+    'daily_rate': '3500.00',
+    'city': 'Lapu-Lapu',
+}
+
+
+class CreateVehicleTests(AgencyFleetTestBase):
+    def post_create(self, **overrides):
+        self.login_agency()
+        return self.client.post(reverse('agencyfleet:create'), {**VALID_VEHICLE_DATA, **overrides})
+
+    def test_get_renders_form(self):
+        self.login_agency()
+        response = self.client.get(reverse('agencyfleet:create'))
+        self.assertContains(response, 'Add a car')
+
+    def test_valid_post_creates_available_car_owned_by_agency(self):
+        response = self.post_create()
+        vehicle = Vehicle.objects.get(model='Xpander')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(vehicle.agency, self.agency_profile)
+        self.assertEqual(vehicle.status, 'available')
+        self.assertEqual(vehicle.make, 'Mitsubishi')
+        self.assertEqual(vehicle.plate_number, 'NBC 4567')
+
+    def test_duplicate_plate_rejected_case_insensitively(self):
+        response = self.post_create(plate_number='abc 1234')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Another car already uses this plate number.')
+        self.assertFalse(Vehicle.objects.filter(model='Xpander').exists())
+
+    def test_duplicate_plate_of_other_agency_rejected(self):
+        response = self.post_create(plate_number='zzz  9999')
+        self.assertContains(response, 'Another car already uses this plate number.')
+
+    def test_bounds_rejected(self):
+        max_year = timezone.localdate().year + 1
+        cases = [
+            ({'year': '1989'}, 'year'),
+            ({'year': str(max_year + 1)}, 'year'),
+            ({'seats': '1'}, 'seats'),
+            ({'seats': '16'}, 'seats'),
+            ({'daily_rate': '0'}, 'daily_rate'),
+            ({'daily_rate': '100000.01'}, 'daily_rate'),
+            ({'make': '   '}, 'make'),
+            ({'fuel_type': 'Rocket'}, 'fuel_type'),
+        ]
+        for overrides, field in cases:
+            with self.subTest(overrides=overrides):
+                response = self.post_create(**overrides)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(field, response.context['form'].errors)
+        self.assertFalse(Vehicle.objects.filter(model='Xpander').exists())
+
+    def test_upper_bounds_accepted(self):
+        max_year = timezone.localdate().year + 1
+        response = self.post_create(year=str(max_year), seats='15', daily_rate='100000')
+        self.assertEqual(response.status_code, 302)
+
+
+class EditVehicleTests(AgencyFleetTestBase):
+    def test_edit_own_car(self):
+        self.login_agency()
+        url = reverse('agencyfleet:edit', args=[self.vehicle.pk])
+        response = self.client.get(url)
+        self.assertContains(response, 'Existing bookings keep the price they were made at.')
+
+        data = {**VALID_VEHICLE_DATA, 'plate_number': 'abc 1234', 'daily_rate': '2999'}
+        response = self.client.post(url, data)
+        self.assertRedirects(response, reverse('agencyfleet:list'), fetch_redirect_response=False)
+        self.vehicle.refresh_from_db()
+        self.assertEqual(self.vehicle.daily_rate, Decimal('2999'))
+        self.assertEqual(self.vehicle.plate_number, 'ABC 1234')
+
+    def test_edit_keeps_existing_booking_snapshot(self):
+        booking = self.make_booking(self.vehicle, 3, 5, 'approved')
+        self.login_agency()
+        data = {**VALID_VEHICLE_DATA, 'plate_number': 'ABC 1234', 'daily_rate': '9999'}
+        self.client.post(reverse('agencyfleet:edit', args=[self.vehicle.pk]), data)
+        booking.refresh_from_db()
+        self.assertEqual(booking.daily_rate_snapshot, Decimal('2500.00'))
+
+    def test_legacy_choice_preserved_on_edit(self):
+        self.vehicle.transmission = 'CVT'
+        self.vehicle.save()
+        self.login_agency()
+        response = self.client.get(reverse('agencyfleet:edit', args=[self.vehicle.pk]))
+        self.assertContains(response, '<option value="CVT" selected>CVT</option>', html=True)
+
+    def test_other_agency_car_404(self):
+        self.login_agency()
+        url = reverse('agencyfleet:edit', args=[self.other_vehicle.pk])
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(self.client.post(url, VALID_VEHICLE_DATA).status_code, 404)
+        self.other_vehicle.refresh_from_db()
+        self.assertEqual(self.other_vehicle.model, 'City')
