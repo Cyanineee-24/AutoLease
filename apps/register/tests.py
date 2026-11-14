@@ -62,6 +62,31 @@ class RegistrationViewTests(TestCase):
         user = CustomUser.objects.get(email='renter@example.com')
         self.assertEqual(user.contact_number, '09189876543')
 
+    def test_safe_next_is_kept_and_forwarded_to_login(self):
+        url = reverse('register:register') + '?next=/vehicles/1/'
+        self.assertContains(self.client.get(url), '<input type="hidden" name="next" value="/vehicles/1/">', html=True)
+
+        response = self.client.post(url, self.registration_data())
+        self.assertRedirects(response, '/login/?next=%2Fvehicles%2F1%2F', fetch_redirect_response=False)
+        self.assertTrue(CustomUser.objects.filter(email='renter@example.com').exists())
+
+    def test_next_from_post_body_is_used(self):
+        response = self.client.post(
+            reverse('register:register'),
+            self.registration_data(next='/vehicles/1/?start_date=2030-01-01&end_date=2030-01-03'),
+        )
+        self.assertRedirects(
+            response,
+            '/login/?next=%2Fvehicles%2F1%2F%3Fstart_date%3D2030-01-01%26end_date%3D2030-01-03',
+            fetch_redirect_response=False,
+        )
+
+    def test_offsite_next_is_ignored(self):
+        url = reverse('register:register') + '?next=https://evil.com'
+        self.assertNotContains(self.client.get(url), 'evil.com')
+        response = self.client.post(url, self.registration_data())
+        self.assertRedirects(response, reverse('login:login'), fetch_redirect_response=False)
+
     def test_agency_registration_requires_business_details(self):
         response = self.client.post(
             reverse('register:register'),
@@ -105,3 +130,29 @@ class LoginViewTests(TestCase):
         )
         self.assertNotContains(response, 'id="id_password" autocomplete="current-password" required value')
         self.assertNotIn('prefill_email', self.client.session)
+
+    def test_login_redirects_to_valid_next(self):
+        response = self.client.post(
+            reverse('login:login'),
+            {
+                'username': 'user@example.com',
+                'password': 'A-secure-password-123',
+                'next': '/vehicles/1/?start_date=2030-01-01&end_date=2030-01-03',
+            },
+        )
+        self.assertRedirects(
+            response,
+            '/vehicles/1/?start_date=2030-01-01&end_date=2030-01-03',
+            fetch_redirect_response=False,
+        )
+
+    def test_login_ignores_offsite_next(self):
+        response = self.client.post(
+            reverse('login:login'),
+            {
+                'username': 'user@example.com',
+                'password': 'A-secure-password-123',
+                'next': 'https://evil.com/',
+            },
+        )
+        self.assertRedirects(response, reverse('home:dashboard'))

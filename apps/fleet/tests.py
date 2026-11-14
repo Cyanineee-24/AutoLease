@@ -6,10 +6,12 @@ from django.core.management import call_command
 from django.template import Context, Template
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import AgencyProfile
 from apps.bookings.models import Booking, Review
 from apps.fleet.models import Favorite, Vehicle
+from apps.userprofile.models import DriverLicense
 from apps.usersettings.models import UserSettings
 
 User = get_user_model()
@@ -444,3 +446,52 @@ class SeedFleetCommandTests(TestCase):
             1 for v in Vehicle.objects.available().with_ratings() if v.is_top_rated
         )
         self.assertGreaterEqual(top_rated_count, 3)
+
+
+class GuestVehicleDetailTests(FleetTestBase):
+    def test_guest_sees_login_prompts_and_no_contact_number(self):
+        response = self.client.get(reverse('fleet:vehicle_detail', args=[self.vehicle.pk]))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+
+        self.assertIn('>Log in to request</a>', html)
+        self.assertRegex(html, r'<a class="button booking-submit-button"[^>]*data-auth-prompt data-auth-booking')
+        self.assertIn('Log in to see contact details', html)
+        self.assertIn('data-auth-title="Log in to save this car"', html)
+        self.assertNotIn('data-favorite-form', html)
+        self.assertNotIn('Request to book', html)
+        self.assertNotIn('Add your license', html)
+        self.assertIn("A driver's license is required to request this car</p>", html)
+
+        # Not just hidden: the number never reaches guests.
+        self.assertNotIn(self.agency_profile.contact_number, html)
+        self.assertNotIn('contact_number', response.context)
+
+    def test_guest_without_visible_contact_gets_no_contact_prompt(self):
+        self.agency_settings.show_contact_number = False
+        self.agency_settings.save()
+        response = self.client.get(reverse('fleet:vehicle_detail', args=[self.vehicle.pk]))
+        self.assertNotContains(response, 'Log in to see contact details')
+        self.assertNotContains(response, self.agency_profile.contact_number)
+
+    def test_guest_detail_404_for_unavailable_car(self):
+        self.vehicle.status = 'maintenance'
+        self.vehicle.save()
+        response = self.client.get(reverse('fleet:vehicle_detail', args=[self.vehicle.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_logged_in_renter_view_unchanged(self):
+        DriverLicense.objects.create(
+            user=self.renter_user,
+            license_number='N01-23-456789',
+            issuing_country='Philippines',
+            expiry_date=timezone.localdate() + datetime.timedelta(days=365),
+            license_image='userprofile/licenses/test.png',
+        )
+        self.client.force_login(self.renter_user)
+        response = self.client.get(reverse('fleet:vehicle_detail', args=[self.vehicle.pk]))
+        self.assertContains(response, 'Request to book')
+        self.assertContains(response, 'data-favorite-form')
+        self.assertContains(response, f'Contact: {self.agency_profile.contact_number}')
+        self.assertNotContains(response, 'data-auth-prompt')
+        self.assertNotContains(response, 'Log in to')

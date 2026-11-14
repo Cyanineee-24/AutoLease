@@ -134,3 +134,55 @@ class DashboardViewTests(TestCase):
         self.assertContains(resp, 'value="civic"')
         self.assertContains(resp, 'value="2026-10-20"')
         self.assertContains(resp, 'value="2026-10-25"')
+
+
+class GuestBrowsingTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
+            username='renter@example.com',
+            email='renter@example.com',
+            password='password123',
+            is_renter=True,
+        )
+        agency_user = User.objects.create_user(
+            username='agency@example.com',
+            email='agency@example.com',
+            password='password123',
+            is_agency=True,
+        )
+        cls.agency = AgencyProfile.objects.create(
+            user=agency_user,
+            business_name='Apex Rentals',
+            contact_number='0917 000 1111',
+        )
+
+    create_vehicle = DashboardViewTests.create_vehicle
+
+    def test_guest_dashboard_hearts_are_login_prompt_links(self):
+        vehicle = self.create_vehicle()
+        response = self.client.get(reverse('home:dashboard') + '?q=vios')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '2022 Toyota Vios')
+        self.assertContains(
+            response,
+            f'<a class="favorite-button" href="{reverse("login:login")}?next=/dashboard/%3Fq%3Dvios" '
+            'data-auth-prompt data-auth-icon="save" data-auth-title="Log in to save this car" '
+            'aria-label="Log in to save this car">',
+        )
+        self.assertNotContains(response, 'data-favorite-form')
+        self.assertNotContains(response, reverse('fleet:favorite_toggle', args=[vehicle.pk]))
+
+    def test_logged_in_dashboard_keeps_favorite_form(self):
+        vehicle = self.create_vehicle()
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('home:dashboard'))
+        self.assertContains(response, 'data-favorite-form')
+        self.assertContains(response, f'action="{reverse("fleet:favorite_toggle", args=[vehicle.pk])}"')
+        self.assertNotContains(response, 'data-auth-prompt')
+
+
+class LandingPageTests(TestCase):
+    def test_find_your_drive_links_to_dashboard(self):
+        response = self.client.get(reverse('home:landing'))
+        self.assertContains(response, f'<a class="button" href="{reverse("home:dashboard")}">Find your drive</a>', html=True)
