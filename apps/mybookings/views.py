@@ -5,6 +5,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.bookings.lifecycle import display_status
 from apps.bookings.models import Booking, Review
 
 from .forms import ReviewForm
@@ -31,6 +32,7 @@ def my_bookings(request):
     for booking in bookings:
         booking.days = (booking.end_date - booking.start_date).days + 1
         booking.total = booking.daily_rate_snapshot * booking.days
+        booking.status_key, booking.status_label = display_status(booking, today)
         try:
             booking.my_review = booking.review
         except Review.DoesNotExist:

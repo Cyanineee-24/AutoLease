@@ -46,7 +46,7 @@
                     <div class="booking-info">
                         <div class="booking-title-row">
                             <a class="booking-title" href="{% url 'fleet:vehicle_detail' vehicle.pk %}">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</a>
-                            <span class="status-badge status-badge--{{ booking.status }}">{{ booking.get_status_display }}</span>
+                            <span class="status-badge status-badge--{{ booking.status_key }}">{{ booking.status_label }}</span>
                         </div>
                         <p class="booking-meta">{{ vehicle.agency.business_name }} · {{ vehicle.city }}</p>
                         <p class="booking-dates">

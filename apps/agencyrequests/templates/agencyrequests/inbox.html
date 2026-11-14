@@ -90,7 +90,7 @@
                             <td>{{ booking.vehicle.make }} {{ booking.vehicle.model }}</td>
                             <td>{{ booking.start_date|date:"M j" }} – {{ booking.end_date|date:"M j, Y" }}</td>
                             <td>₱{{ booking.total|floatformat:"-2g" }}</td>
-                            <td><span class="status-badge status-badge--{{ booking.status }}">{{ booking.get_status_display }}</span></td>
+                            <td><span class="status-badge status-badge--{{ booking.status_key }}">{{ booking.status_label }}</span></td>
                         </tr>
                     {% endfor %}
                 </tbody>

@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.accounts.decorators import agency_required
+from apps.bookings.lifecycle import display_status
 from apps.bookings.models import Booking
 
 from .forms import DecisionForm
@@ -25,7 +26,9 @@ def inbox(request):
         .select_related('vehicle', 'renter')
         .order_by('start_date', 'created_at')
     )
+    today = timezone.localdate()
     for booking in bookings:
+        booking.status_key, booking.status_label = display_status(booking, today)
         booking.days = (booking.end_date - booking.start_date).days + 1
         booking.total = booking.daily_rate_snapshot * booking.days
         booking.renter_name = _renter_name(booking.renter)

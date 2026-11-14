@@ -53,6 +53,8 @@
 .status-badge { border-radius: 999px; font-size: 0.75rem; font-weight: 600; padding: 3px 10px; }
 .status-badge--pending { background: #FFF4E5; color: #8A4B00; }
 .status-badge--approved { background: #E8F5E9; color: #1B5E20; }
+.status-badge--upcoming { background: #E8F5E9; color: #1B5E20; }
+.status-badge--in_progress { background: #FDE8EE; color: #C9153F; }
 .status-badge--declined { background: #FFEBEE; color: #B71C1C; }
 .status-badge--cancelled { background: #EEEEEE; color: #555555; }
 .status-badge--completed { background: #E3F2FD; color: #0D47A1; }
