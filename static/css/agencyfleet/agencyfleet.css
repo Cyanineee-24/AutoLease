@@ -62,6 +62,7 @@
 .listing-status-form { align-items: center; display: inline-flex; gap: 6px; }
 .listing-status-select { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; font: inherit; font-size: 0.85rem; padding: 6px 8px; }
 .listing-status-select:focus { border-color: var(--color-primary); outline: 2px solid rgba(230, 30, 77, 0.18); }
+.alert-link { color: inherit; font-weight: 700; margin-left: 4px; text-decoration: underline; white-space: nowrap; }
 .sr-only { border: 0; clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; width: 1px; }
 
 /* ---- Add / edit form ---- */

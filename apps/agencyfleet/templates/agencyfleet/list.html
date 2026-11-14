@@ -22,7 +22,12 @@
     {% if messages %}
         <div class="form-messages">
             {% for message in messages %}
-                <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}">{{ message }}</div>
+                <div class="alert {% if message.level_tag == 'error' %}alert-error{% elif message.level_tag == 'success' %}alert-success{% else %}alert-info{% endif %}">
+                    {{ message }}
+                    {% if 'link-booking-requests' in message.extra_tags %}
+                        <a class="alert-link" href="{% url 'agencyrequests:inbox' %}">Go to Booking requests</a>
+                    {% endif %}
+                </div>
             {% endfor %}
         </div>
     {% endif %}

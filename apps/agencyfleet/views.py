@@ -14,6 +14,7 @@ from .forms import MAX_PHOTOS_PER_CAR, VehicleForm, VehiclePhotoForm
 
 NO_LONGER_AVAILABLE_RESPONSE = 'This car is no longer available.'
 STATUS_LABELS = dict(Vehicle.STATUS_CHOICES)
+BOOKING_REQUESTS_LINK_TAG = 'link-booking-requests'
 
 
 def _owned_vehicle(request, pk):
@@ -113,10 +114,13 @@ def change_status(request, pk):
     today = timezone.localdate()
     upcoming = Booking.objects.filter(vehicle=vehicle, status='approved', end_date__gte=today).count()
     if upcoming:
+        # Plain (escaped) text; the template adds the Booking requests link for
+        # this tag, so no mark_safe is needed.
         messages.error(
             request,
             f'This car has {upcoming} upcoming trip{"s" if upcoming != 1 else ""}. '
-            f'Cancel {"them" if upcoming != 1 else "it"} before changing its status.',
+            f'Cancel {"them" if upcoming != 1 else "it"} in Booking requests first.',
+            extra_tags=BOOKING_REQUESTS_LINK_TAG,
         )
         return redirect('agencyfleet:list')
 

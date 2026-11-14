@@ -283,6 +283,24 @@ class StatusChangeTests(AgencyFleetTestBase):
         self.vehicle.refresh_from_db()
         self.assertEqual(self.vehicle.status, 'available')
 
+    def test_blocked_message_links_to_booking_requests(self):
+        self.make_booking(self.vehicle, 5, 7, 'approved')
+        response = self.post_status('maintenance')
+        self.assertIn('This car has 1 upcoming trip. Cancel it in Booking requests first.', messages_text(response))
+        page = self.client.get(reverse('agencyfleet:list'))
+        self.assertContains(page, 'class="alert alert-error"')
+        self.assertContains(
+            page,
+            f'<a class="alert-link" href="{reverse("agencyrequests:inbox")}">Go to Booking requests</a>',
+            html=True,
+        )
+
+    def test_success_message_has_no_booking_requests_link(self):
+        self.post_status('maintenance')
+        page = self.client.get(reverse('agencyfleet:list'))
+        self.assertContains(page, 'class="alert alert-success"')
+        self.assertNotContains(page, 'Go to Booking requests')
+
     def test_blocked_when_approved_booking_in_future(self):
         self.make_booking(self.vehicle, 5, 7, 'approved')
         self.make_booking(self.vehicle, 10, 12, 'approved')
