@@ -1,0 +1,13 @@
+{% autoescape off %}Hi {{ renter_name }},
+
+Sorry, {{ agency_name }} had to cancel your trip.
+
+Car: {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}
+Dates: {{ booking.start_date|date:"D, M j, Y" }} to {{ booking.end_date|date:"D, M j, Y" }} ({{ days }} day{{ days|pluralize }})
+Total: ₱{{ total|floatformat:"-2g" }}
+{% if reason %}Reason: {{ reason }}
+{% endif %}
+You haven't been charged. See your bookings: {{ link }}
+
+The AutoLease team
+{% endautoescape %}

@@ -152,6 +152,8 @@ MAILERS = {
     },
 }
 
+DEFAULT_FROM_EMAIL = 'AutoLease <no-reply@autolease.local>'
+
 AUTH_USER_MODEL = 'accounts.CustomUser'
 LOGIN_URL = 'login:login'
 LOGIN_REDIRECT_URL = 'home:dashboard'

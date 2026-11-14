@@ -1,0 +1,13 @@
+{% autoescape off %}Hi {{ agency_name }},
+
+{{ renter_label }} would like to rent one of your cars.
+
+Car: {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.plate_number }})
+Dates: {{ booking.start_date|date:"D, M j, Y" }} to {{ booking.end_date|date:"D, M j, Y" }} ({{ days }} day{{ days|pluralize }})
+Total: ₱{{ total|floatformat:"-2g" }}
+{% if booking.renter_message %}Message: {{ booking.renter_message }}
+{% endif %}
+Approve or decline it here: {{ link }}
+
+The AutoLease team
+{% endautoescape %}

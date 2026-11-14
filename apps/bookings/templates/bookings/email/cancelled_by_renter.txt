@@ -1,0 +1,12 @@
+{% autoescape off %}Hi {{ agency_name }},
+
+{{ renter_label }} cancelled an approved trip. The dates are open again.
+
+Car: {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.plate_number }})
+Dates: {{ booking.start_date|date:"D, M j, Y" }} to {{ booking.end_date|date:"D, M j, Y" }} ({{ days }} day{{ days|pluralize }})
+Total: ₱{{ total|floatformat:"-2g" }}
+
+See your booking requests: {{ link }}
+
+The AutoLease team
+{% endautoescape %}
