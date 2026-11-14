@@ -16,6 +16,7 @@
 
         <form method="post" class="auth-form">
             {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
             {% if form.non_field_errors %}
                 <div class="form-errors">{{ form.non_field_errors }}</div>
             {% endif %}
@@ -58,7 +59,7 @@
 
             <button class="button" type="submit">Create account</button>
         </form>
-        <p class="auth-footer">Already have an account? <a href="{% url 'login:login' %}">Log in</a>.</p>
+        <p class="auth-footer">Already have an account? <a href="{% url 'login:login' %}{% if next %}?next={{ next|urlencode:'' }}{% endif %}">Log in</a>.</p>
     </div>
 </section>
 {% endblock %}
