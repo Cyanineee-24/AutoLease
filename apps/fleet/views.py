@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -16,13 +16,16 @@ from apps.usersettings.models import UserSettings
 @login_required
 @require_POST
 def favorite_toggle(request, pk):
-    vehicle = get_object_or_404(Vehicle, pk=pk, status='available')
+    vehicle = get_object_or_404(Vehicle, pk=pk)
 
     favorite = Favorite.objects.filter(user=request.user, vehicle=vehicle)
     if favorite.exists():
+        # Un-saving always works, so cars that went unavailable can be removed.
         favorite.delete()
         favorited = False
     else:
+        if vehicle.status != 'available':
+            raise Http404('Vehicle is not available.')
         Favorite.objects.create(user=request.user, vehicle=vehicle)
         favorited = True
 
