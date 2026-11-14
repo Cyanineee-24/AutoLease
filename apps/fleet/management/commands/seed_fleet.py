@@ -3,6 +3,8 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from apps.accounts.models import AgencyProfile
 from apps.bookings.models import Booking, Review
@@ -11,11 +13,15 @@ from apps.usersettings.models import UserSettings
 
 User = get_user_model()
 
+DEMO_FUTURE_MESSAGE = 'Upcoming business trip in Cebu.'
+DEMO_START_OFFSET_DAYS = 7
+DEMO_LENGTH_DAYS = 6  # inclusive, so start..start+5
+
 
 class Command(BaseCommand):
     help = (
         'Idempotently seeds demo users, agency, 14 vehicles, completed bookings, '
-        'reviews, and one future approved booking for testing/demo purposes.\n'
+        'reviews, and one approved booking starting 7 days from today for testing/demo purposes.\n'
         'Usage: python manage.py seed_fleet'
     )
 
@@ -364,25 +370,38 @@ class Command(BaseCommand):
                     },
                 )
 
-        # 5. One approved FUTURE booking on one vehicle
+        # 5. One approved FUTURE booking on one vehicle, always relative to today
         demo_future_vehicle = created_vehicles[0]
-        future_start = datetime.date(2026, 11, 10)
-        future_end = datetime.date(2026, 11, 15)
+        today = timezone.localdate()
+        future_start = today + datetime.timedelta(days=DEMO_START_OFFSET_DAYS)
+        future_end = future_start + datetime.timedelta(days=DEMO_LENGTH_DAYS - 1)
 
-        future_booking, _ = Booking.objects.get_or_create(
+        demo_qs = Booking.objects.filter(
             vehicle=demo_future_vehicle,
-            start_date=future_start,
-            end_date=future_end,
-            defaults={
-                'renter': renters[0],
-                'daily_rate_snapshot': demo_future_vehicle.daily_rate,
-                'status': 'approved',
-                'renter_message': 'Upcoming business trip in Cebu.',
-            },
-        )
-        if future_booking.status != 'approved':
-            future_booking.status = 'approved'
-            future_booking.save()
+            renter=renters[0],
+            renter_message=DEMO_FUTURE_MESSAGE,
+        ).order_by('pk')
+        future_booking = demo_qs.first()
+        if future_booking:
+            demo_qs.exclude(pk=future_booking.pk).delete()
+        else:
+            future_booking = Booking(
+                vehicle=demo_future_vehicle,
+                renter=renters[0],
+                renter_message=DEMO_FUTURE_MESSAGE,
+            )
+        future_booking.start_date = future_start
+        future_booking.end_date = future_end
+        future_booking.daily_rate_snapshot = demo_future_vehicle.daily_rate
+        future_booking.status = 'approved'
+        try:
+            with transaction.atomic():
+                future_booking.save()
+        except IntegrityError:
+            self.stdout.write(self.style.WARNING(
+                f'Skipped demo future booking: another approved booking on '
+                f'{demo_future_vehicle.plate_number} overlaps {future_start} to {future_end}.'
+            ))
 
         self.stdout.write(self.style.SUCCESS('Successfully seeded fleet data.'))
         self.stdout.write('----------------------------------------------------')
