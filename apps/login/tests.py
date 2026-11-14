@@ -24,6 +24,7 @@ class AuthPromptModalTests(TestCase):
                 self.assertContains(response, f'data-register-url="{reverse("register:register")}"')
                 self.assertContains(response, 'css/login/auth_prompt.css')
                 self.assertContains(response, 'js/login/auth_prompt.js')
+                self.assertContains(response, "Browsing is free. You'll come right back to this page.")
 
     def test_logged_in_pages_have_no_modal_or_assets(self):
         self.client.force_login(self.user)
