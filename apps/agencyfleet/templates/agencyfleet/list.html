@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My listings | AutoLease{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/fleet/fleet.css' %}">
+<link rel="stylesheet" href="{% static 'css/agencyfleet/agencyfleet.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="listings-container">
+    <header class="listings-header">
+        <div>
+            <p class="eyebrow">Agency</p>
+            <h1>My listings</h1>
+            <p class="listings-subtitle">{{ vehicles|length }} car{{ vehicles|length|pluralize }} · {{ available_count }} available</p>
+        </div>
+    </header>
+
+    {% if messages %}
+        <div class="form-messages">
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if not vehicles %}
+        <div class="listings-empty">
+            <p>You haven't listed any cars yet.</p>
+        </div>
+    {% else %}
+        <ul class="listing-list">
+            {% for vehicle in vehicles %}
+                <li class="listing-card">
+                    <div class="listing-media">
+                        {% if vehicle.primary_image %}
+                            <img class="listing-image" src="{{ vehicle.primary_image.image.url }}" alt="{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}" loading="lazy">
+                        {% else %}
+                            <div class="vehicle-card-placeholder tone-{{ vehicle.placeholder_tone }}">
+                                <svg class="placeholder-car-svg" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <path d="M5 17h1a2 2 0 0 0 2-2V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2h1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                    <circle cx="7" cy="17" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                    <circle cx="17" cy="17" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                    <path d="M3 11h2M19 11h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="listing-body">
+                        <div class="listing-title-row">
+                            <h2 class="listing-title">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h2>
+                            <span class="listing-status listing-status--{{ vehicle.status }}">{{ vehicle.get_status_display }}</span>
+                        </div>
+                        <p class="listing-meta">
+                            <span class="listing-plate">{{ vehicle.plate_number }}</span>
+                            {{ vehicle.city }}
+                        </p>
+                        <p class="listing-price"><strong>₱{{ vehicle.daily_rate|floatformat:"-2g" }}</strong> per day</p>
+                        {% if vehicle.upcoming_count or vehicle.pending_count %}
+                            <p class="listing-activity">
+                                {% if vehicle.upcoming_count %}<span>{{ vehicle.upcoming_count }} upcoming trip{{ vehicle.upcoming_count|pluralize }}</span>{% endif %}
+                                {% if vehicle.pending_count %}<span>{{ vehicle.pending_count }} pending request{{ vehicle.pending_count|pluralize }}</span>{% endif %}
+                            </p>
+                        {% endif %}
+
+                        <div class="listing-actions">
+                            {% if vehicle.status == 'available' %}
+                                <a class="listing-link" href="{% url 'fleet:vehicle_detail' vehicle.pk %}">View listing</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>
+{% endblock %}
