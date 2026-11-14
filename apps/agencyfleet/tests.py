@@ -8,7 +8,9 @@ from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
@@ -532,3 +534,38 @@ class NavigationTests(AgencyFleetTestBase):
         response = self.client.get(reverse('home:landing'))
         self.assertContains(response, f'<a class="btn-host" href="{reverse("register:register")}">Become a host</a>', html=True)
         self.assertNotContains(response, 'My listings')
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class ListQueryCountTests(AgencyFleetTestBase):
+    def list_query_count(self):
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(reverse('agencyfleet:list'))
+        self.assertEqual(response.status_code, 200)
+        return len(ctx.captured_queries)
+
+    def test_query_count_does_not_grow_with_cars(self):
+        self.login_agency()
+        baseline = self.list_query_count()
+        for index in range(4):
+            car = self.make_vehicle(self.agency_profile, f'QRY {index:04d}')
+            VehicleImage.objects.create(vehicle=car, image=png_upload(), is_primary=True)
+            self.make_booking(car, 3, 5, 'approved')
+            self.make_booking(car, 8, 9, 'pending')
+        self.assertEqual(self.list_query_count(), baseline)
+
+
+class VehicleDetailManageLinkTests(AgencyFleetTestBase):
+    def test_owner_sees_manage_link(self):
+        self.login_agency()
+        response = self.client.get(reverse('fleet:vehicle_detail', args=[self.vehicle.pk]))
+        self.assertContains(response, 'This is your listing')
+        self.assertContains(response, f'href="{reverse("agencyfleet:edit", args=[self.vehicle.pk])}"')
+
+    def test_other_users_do_not_see_manage_link(self):
+        for user in (self.renter_user, self.other_agency_user):
+            with self.subTest(user=user.email):
+                self.client.force_login(user)
+                response = self.client.get(reverse('fleet:vehicle_detail', args=[self.vehicle.pk]))
+                self.assertNotContains(response, 'Manage this listing')
+                self.assertNotContains(response, self.vehicle.plate_number)
