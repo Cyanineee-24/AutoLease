@@ -700,6 +700,20 @@
     opacity: 0.6;
 }
 
+.booking-manage-link {
+    color: var(--color-text);
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 12px;
+    text-align: center;
+    text-decoration: underline;
+}
+
+.booking-manage-link:hover {
+    color: var(--color-primary);
+}
+
 .booking-card .form-messages {
     margin-bottom: 16px;
 }

@@ -511,3 +511,24 @@ class PhotoTests(AgencyFleetTestBase):
         response = self.client.get(reverse('agencyfleet:list'))
         self.assertContains(response, 'Photos (1)')
         self.assertContains(response, 'class="listing-image"')
+
+
+class NavigationTests(AgencyFleetTestBase):
+    def test_agency_sees_my_listings_not_become_a_host(self):
+        self.login_agency()
+        response = self.client.get(reverse('home:dashboard'))
+        self.assertContains(response, f'<a class="btn-host" href="{reverse("agencyfleet:list")}">My listings</a>', html=True)
+        self.assertContains(response, '<span class="dropdown-label">My listings</span>', html=True)
+        self.assertNotContains(response, 'Become a host')
+
+    def test_renter_does_not_see_become_a_host_or_my_listings(self):
+        self.client.force_login(self.renter_user)
+        response = self.client.get(reverse('home:dashboard'))
+        self.assertNotContains(response, 'Become a host')
+        self.assertNotContains(response, 'My listings')
+        self.assertNotContains(response, 'class="btn-host"')
+
+    def test_guest_sees_become_a_host(self):
+        response = self.client.get(reverse('home:landing'))
+        self.assertContains(response, f'<a class="btn-host" href="{reverse("register:register")}">Become a host</a>', html=True)
+        self.assertNotContains(response, 'My listings')

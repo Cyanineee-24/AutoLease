@@ -216,6 +216,7 @@
 
                 {% if is_owner %}
                     <button class="button booking-submit-button" type="button" disabled>This is your listing</button>
+                    <a class="booking-manage-link" href="{% url 'agencyfleet:edit' vehicle.pk %}">Manage this listing</a>
                 {% elif not has_license %}
                     <button class="button booking-submit-button" type="button" disabled>Driver's license required</button>
                 {% else %}
