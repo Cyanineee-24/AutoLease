@@ -1,9 +1,12 @@
 import datetime
+import unittest
 from decimal import Decimal
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.core import mail
+from django.db import IntegrityError, transaction
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -16,7 +19,7 @@ from apps.bookings.lifecycle import (
     display_status,
     trip_phase,
 )
-from apps.bookings.models import Booking
+from apps.bookings.models import Booking, Review
 from apps.fleet.models import Vehicle
 from apps.userprofile.models import DriverLicense
 from apps.usersettings.models import UserSettings
@@ -357,3 +360,191 @@ class NotificationOptOutAndFailureTests(NotificationTestBase):
                 })
         self.assertRedirects(response, reverse('mybookings:list'), fetch_redirect_response=False)
         self.assertTrue(Booking.objects.filter(renter=self.renter, status='pending').exists())
+
+
+def messages_text(response):
+    return ' '.join(str(m) for m in get_messages(response.wsgi_request))
+
+
+class BookingRequestRulesTests(NotificationTestBase):
+    """The original request rules of bookings:request / BookingRequestForm."""
+
+    def request(self, user, start_offset, end_offset, message='', vehicle=None):
+        vehicle = vehicle or self.vehicle
+        self.client.force_login(user)
+        data = {
+            'start_date': (self.today + datetime.timedelta(days=start_offset)).isoformat(),
+            'end_date': (self.today + datetime.timedelta(days=end_offset)).isoformat(),
+            'renter_message': message,
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            return self.client.post(reverse('bookings:request', args=[vehicle.pk]), data)
+
+    def assert_refused(self, response, message, renter=None):
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(message, messages_text(response))
+        self.assertFalse(Booking.objects.filter(renter=renter or self.renter).exists())
+
+    def test_happy_path_creates_pending_booking_with_rate_snapshot(self):
+        response = self.request(self.renter, 5, 8, message='Airport pick-up, please.')
+        self.assertRedirects(response, reverse('mybookings:list'), fetch_redirect_response=False)
+        self.assertIn('Request sent for 4 days.', messages_text(response))
+
+        booking = Booking.objects.get(renter=self.renter)
+        self.assertEqual(booking.status, 'pending')
+        self.assertEqual(booking.vehicle, self.vehicle)
+        self.assertEqual(booking.start_date, self.today + datetime.timedelta(days=5))
+        self.assertEqual(booking.end_date, self.today + datetime.timedelta(days=8))
+        self.assertEqual(booking.renter_message, 'Airport pick-up, please.')
+        self.assertEqual(booking.daily_rate_snapshot, Decimal('2500.00'))
+
+        # A later price change does not touch the request.
+        Vehicle.objects.filter(pk=self.vehicle.pk).update(daily_rate=Decimal('9999.00'))
+        booking.refresh_from_db()
+        self.assertEqual(booking.daily_rate_snapshot, Decimal('2500.00'))
+
+    def test_same_day_trip_allowed_as_one_day(self):
+        response = self.request(self.renter, 3, 3)
+        self.assertIn('Request sent for 1 day.', messages_text(response))
+        self.assertEqual(Booking.objects.filter(renter=self.renter, status='pending').count(), 1)
+
+    def test_owner_cannot_request_own_car(self):
+        DriverLicense.objects.create(
+            user=self.agency_user,
+            license_number='N01-AGENCY',
+            issuing_country='Philippines',
+            expiry_date=self.today + datetime.timedelta(days=365),
+            license_image='userprofile/licenses/test.png',
+        )
+        response = self.request(self.agency_user, 3, 4)
+        self.assert_refused(response, "You can't request your own car.", renter=self.agency_user)
+
+    def test_no_license_refused(self):
+        no_license = User.objects.create_user(
+            username='nolicense@example.com', email='nolicense@example.com', password='password123', is_renter=True,
+        )
+        response = self.request(no_license, 3, 4)
+        self.assert_refused(response, "Add your driver's license to your profile before requesting a car.", renter=no_license)
+
+    def test_past_pick_up_refused(self):
+        self.assert_refused(self.request(self.renter, -1, 2), 'Pick-up date cannot be in the past.')
+
+    def test_drop_off_before_pick_up_refused(self):
+        self.assert_refused(self.request(self.renter, 5, 4), 'Drop-off must be on or after pick-up.')
+
+    def test_overlap_with_approved_booking_refused_inclusive_edge(self):
+        self.make_booking(self.other_renter, 5, 7, status='approved')
+        # New trip starts on the day the approved one ends.
+        response = self.request(self.renter, 7, 9)
+        self.assert_refused(response, 'This car is already booked for some of those dates.')
+
+    def test_overlap_with_someone_elses_pending_request_allowed(self):
+        other = self.make_booking(self.other_renter, 5, 7)
+        response = self.request(self.renter, 6, 8)
+        self.assertIn('Request sent for 3 days.', messages_text(response))
+        other.refresh_from_db()
+        self.assertEqual(other.status, 'pending')
+        self.assertEqual(Booking.objects.get(renter=self.renter).status, 'pending')
+
+    def test_same_renter_overlapping_pending_refused(self):
+        self.make_booking(self.renter, 5, 7)
+        response = self.request(self.renter, 7, 9)
+        self.assertIn('You already have a pending request for these dates.', messages_text(response))
+        self.assertEqual(Booking.objects.filter(renter=self.renter).count(), 1)
+
+    def test_unavailable_or_maintenance_car_404(self):
+        for status in ('unavailable', 'maintenance'):
+            with self.subTest(status=status):
+                Vehicle.objects.filter(pk=self.vehicle.pk).update(status=status)
+                response = self.request(self.renter, 3, 4)
+                self.assertEqual(response.status_code, 404)
+                self.assertFalse(Booking.objects.filter(renter=self.renter).exists())
+
+    # BUG: apps/bookings/forms.py:19 sets max_length after the field is built, so no MaxLengthValidator runs.
+    @unittest.expectedFailure
+    def test_message_over_1000_characters_refused(self):
+        response = self.request(self.renter, 3, 4, message='x' * 1001)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('Ensure this value has at most 1000 characters', messages_text(response))
+        self.assertFalse(Booking.objects.filter(renter=self.renter).exists())
+
+    def test_get_not_allowed(self):
+        self.client.force_login(self.renter)
+        response = self.client.get(reverse('bookings:request', args=[self.vehicle.pk]))
+        self.assertEqual(response.status_code, 405)
+
+
+class BookingConstraintTests(NotificationTestBase):
+    """Database constraints, checked at the model level (fixed past dates are fine here)."""
+
+    START = datetime.date(2024, 3, 10)
+    END = datetime.date(2024, 3, 14)
+
+    def booking(self, renter=None, start=START, end=END, status='approved', vehicle=None):
+        return Booking(
+            vehicle=vehicle or self.vehicle,
+            renter=renter or self.renter,
+            start_date=start,
+            end_date=end,
+            daily_rate_snapshot=Decimal('2500.00'),
+            status=status,
+        )
+
+    def assert_integrity_error(self, obj):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                obj.save()
+
+    def test_two_approved_bookings_cannot_overlap(self):
+        self.booking().save()
+        day = datetime.timedelta(days=1)
+        for start, end in (
+            (self.START, self.END),                    # identical
+            (self.START + day, self.END - day),        # inside
+            (self.START - 3 * day, self.START),        # touches the first day
+            (self.END, self.END + 3 * day),            # touches the last day
+        ):
+            with self.subTest(start=start, end=end):
+                self.assert_integrity_error(self.booking(self.other_renter, start, end))
+
+    def test_adjacent_approved_bookings_are_fine(self):
+        self.booking().save()
+        day = datetime.timedelta(days=1)
+        self.booking(self.other_renter, self.END + day, self.END + 3 * day).save()
+        self.booking(self.other_renter, self.START - 3 * day, self.START - day).save()
+        self.assertEqual(Booking.objects.filter(status='approved').count(), 3)
+
+    def test_same_dates_on_a_different_car_are_fine(self):
+        other_car = Vehicle.objects.create(
+            agency=self.agency_profile, make='Honda', model='City', year=2021, plate_number='XYZ 9876',
+            transmission='Automatic', fuel_type='Gasoline', seats=5, color='Gray',
+            daily_rate=Decimal('2800.00'), city='Cebu City',
+        )
+        self.booking().save()
+        self.booking(self.other_renter, vehicle=other_car).save()
+        self.assertEqual(Booking.objects.filter(status='approved').count(), 2)
+
+    def test_overlap_allowed_when_one_is_not_approved(self):
+        self.booking().save()
+        for status in ('pending', 'declined', 'cancelled'):
+            with self.subTest(status=status):
+                self.booking(self.other_renter, status=status).save()
+        self.assertEqual(Booking.objects.count(), 4)
+
+    def test_end_before_start_rejected(self):
+        self.assert_integrity_error(self.booking(start=self.END, end=self.START, status='pending'))
+
+    def test_invalid_status_rejected(self):
+        self.assert_integrity_error(self.booking(status='weird'))
+
+    def test_review_rating_must_be_1_to_5(self):
+        booking = self.booking(status='completed')
+        booking.save()
+        for rating in (0, 6):
+            with self.subTest(rating=rating):
+                self.assert_integrity_error(Review(booking=booking, rating=rating))
+        for rating in (1, 5):
+            with self.subTest(rating=rating):
+                with transaction.atomic():
+                    review = Review.objects.create(booking=booking, rating=rating)
+                    review.delete()
