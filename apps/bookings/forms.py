@@ -7,6 +7,16 @@ from .models import Booking
 class BookingRequestForm(forms.ModelForm):
     """Renter's date-range request for a single vehicle."""
 
+    # Declared here (not tweaked in __init__) so max_length builds its validator.
+    # The label is what booking_request prefixes field errors with.
+    renter_message = forms.CharField(
+        label='Message to the agency',
+        required=False,
+        max_length=1000,
+        strip=True,
+        widget=forms.Textarea,
+    )
+
     class Meta:
         model = Booking
         fields = ['start_date', 'end_date', 'renter_message']
@@ -15,8 +25,6 @@ class BookingRequestForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.vehicle = vehicle
         self.renter = renter
-        self.fields['renter_message'].required = False
-        self.fields['renter_message'].max_length = 1000
 
     def clean(self):
         cleaned = super().clean()

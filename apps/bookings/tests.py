@@ -1,5 +1,4 @@
 import datetime
-import unittest
 from decimal import Decimal
 from unittest import mock
 
@@ -460,12 +459,13 @@ class BookingRequestRulesTests(NotificationTestBase):
                 self.assertEqual(response.status_code, 404)
                 self.assertFalse(Booking.objects.filter(renter=self.renter).exists())
 
-    # BUG: apps/bookings/forms.py:19 sets max_length after the field is built, so no MaxLengthValidator runs.
-    @unittest.expectedFailure
     def test_message_over_1000_characters_refused(self):
         response = self.request(self.renter, 3, 4, message='x' * 1001)
         self.assertEqual(response.status_code, 302)
-        self.assertIn('Ensure this value has at most 1000 characters', messages_text(response))
+        self.assertIn(
+            'Message to the agency: Ensure this value has at most 1000 characters',
+            messages_text(response),
+        )
         self.assertFalse(Booking.objects.filter(renter=self.renter).exists())
 
     def test_get_not_allowed(self):
