@@ -183,3 +183,155 @@ class AgencyCancelTripTests(BookingStatusTestBase):
         self.client.post(status_url, {'status': 'maintenance'})
         vehicle.refresh_from_db()
         self.assertEqual(vehicle.status, 'maintenance')
+
+
+class DecideRulesTests(BookingStatusTestBase):
+    """Approve / decline rules of agencyrequests:decide (the original booking flow)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.other_renter = User.objects.create_user(
+            username='paolo@example.com', email='paolo@example.com', password='password123',
+            is_renter=True, first_name='Paolo',
+        )
+        cls.third_renter = User.objects.create_user(
+            username='ana@example.com', email='ana@example.com', password='password123',
+            is_renter=True, first_name='Ana',
+        )
+
+    def setUp(self):
+        self.today = timezone.localdate()
+        self.client.force_login(self.agency_user)
+        # A car with no approved trips, so approvals are possible.
+        self.car = self.make_trip('DEC 1000', 'Innova', self.today, 30, 31, status='declined').vehicle
+
+    def pending(self, renter, start_offset, end_offset, vehicle=None, status='pending'):
+        return Booking.objects.create(
+            vehicle=vehicle or self.car,
+            renter=renter,
+            start_date=self.today + datetime.timedelta(days=start_offset),
+            end_date=self.today + datetime.timedelta(days=end_offset),
+            daily_rate_snapshot=(vehicle or self.car).daily_rate,
+            status=status,
+        )
+
+    def decide(self, booking, **data):
+        with self.captureOnCommitCallbacks(execute=True):
+            return self.client.post(reverse('agencyrequests:decide', args=[booking.pk]), data)
+
+    def test_approve(self):
+        booking = self.pending(self.renter_user, 5, 7)
+        response = self.decide(booking, action='approve', agency_response='Pick-up at 9 AM.')
+        self.assertRedirects(response, reverse('agencyrequests:inbox'), fetch_redirect_response=False)
+        self.assertIn('Approved the request for the Toyota Innova.', messages_text(response))
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, 'approved')
+        self.assertEqual(booking.agency_response, 'Pick-up at 9 AM.')
+        self.assertIsNotNone(booking.decided_at)
+
+    def test_decline_with_and_without_reply(self):
+        for reply in ('Fully booked that week.', ''):
+            with self.subTest(reply=reply):
+                booking = self.pending(self.renter_user, 5, 7)
+                response = self.decide(booking, action='decline', agency_response=reply)
+                self.assertRedirects(response, reverse('agencyrequests:inbox'), fetch_redirect_response=False)
+                self.assertIn('Declined the request for the Toyota Innova.', messages_text(response))
+                booking.refresh_from_db()
+                self.assertEqual(booking.status, 'declined')
+                self.assertEqual(booking.agency_response, reply)
+                self.assertIsNotNone(booking.decided_at)
+
+    def test_approve_auto_declines_overlapping_pending_requests(self):
+        chosen = self.pending(self.renter_user, 5, 7)
+        touches_start = self.pending(self.other_renter, 2, 5)    # ends on chosen's first day
+        touches_end = self.pending(self.third_renter, 7, 9)      # starts on chosen's last day
+        before = self.pending(self.other_renter, 1, 4)           # ends the day before
+        after = self.pending(self.third_renter, 8, 10)           # starts the day after
+        other_car = self.make_trip('OTH 1001', 'Hilux', self.today, 5, 7, status='pending')
+
+        response = self.decide(chosen, action='approve')
+        self.assertIn('2 overlapping requests were declined automatically.', messages_text(response))
+
+        chosen.refresh_from_db()
+        self.assertEqual(chosen.status, 'approved')
+        for obj in (touches_start, touches_end):
+            obj.refresh_from_db()
+            self.assertEqual(obj.status, 'declined')
+            self.assertEqual(obj.agency_response, 'Dates no longer available')
+            self.assertEqual(obj.decided_at, chosen.decided_at)
+        for obj in (before, after, other_car):
+            obj.refresh_from_db()
+            self.assertEqual(obj.status, 'pending')
+            self.assertIsNone(obj.decided_at)
+
+    def test_single_auto_decline_uses_singular_message(self):
+        chosen = self.pending(self.renter_user, 5, 7)
+        self.pending(self.other_renter, 6, 8)
+        response = self.decide(chosen, action='approve')
+        self.assertIn('1 overlapping request was declined automatically.', messages_text(response))
+
+    def test_already_decided_booking_unchanged(self):
+        for status in ('approved', 'declined', 'cancelled', 'completed'):
+            with self.subTest(status=status):
+                booking = self.pending(self.renter_user, 40, 41, status=status)
+                response = self.decide(booking, action='decline', agency_response='Too late')
+                self.assertIn('This request has already been decided.', messages_text(response))
+                booking.refresh_from_db()
+                self.assertEqual(booking.status, status)
+                self.assertEqual(booking.agency_response, '')
+
+    def test_invalid_action_or_long_reply_rejected(self):
+        booking = self.pending(self.renter_user, 5, 7)
+        for data in ({'action': 'maybe'}, {'action': 'approve', 'agency_response': 'x' * 1001}, {}):
+            with self.subTest(data=list(data)):
+                response = self.decide(booking, **data)
+                self.assertIn('Choose approve or decline.', messages_text(response))
+                booking.refresh_from_db()
+                self.assertEqual(booking.status, 'pending')
+                self.assertIsNone(booking.decided_at)
+
+    def test_other_agency_booking_404(self):
+        rival = User.objects.create_user(
+            username='rival@example.com', email='rival@example.com', password='password123', is_agency=True,
+        )
+        AgencyProfile.objects.create(user=rival, business_name='Rival Rentals', contact_number='0917 999 0000')
+        booking = self.pending(self.renter_user, 5, 7)
+        self.client.force_login(rival)
+        self.assertEqual(self.decide(booking, action='approve').status_code, 404)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, 'pending')
+
+    def test_renter_blocked_from_inbox_and_decide(self):
+        booking = self.pending(self.other_renter, 5, 7)
+        self.client.force_login(self.renter_user)
+        for response in (
+            self.client.get(reverse('agencyrequests:inbox')),
+            self.decide(booking, action='approve'),
+        ):
+            self.assertRedirects(response, reverse('home:dashboard'), fetch_redirect_response=False)
+            self.assertIn('Only rental agencies', messages_text(response))
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, 'pending')
+
+    def test_get_decide_not_allowed(self):
+        booking = self.pending(self.renter_user, 5, 7)
+        response = self.client.get(reverse('agencyrequests:decide', args=[booking.pk]))
+        self.assertEqual(response.status_code, 405)
+
+    def test_approving_into_an_existing_approved_trip_fails_gracefully(self):
+        # Reachable through the view: decide() saves the approval before auto-declining,
+        # so the no-overlap constraint rejects it.
+        approved = self.pending(self.other_renter, 5, 7, status='approved')
+        conflicting = self.pending(self.renter_user, 7, 9)   # pending may overlap
+        response = self.decide(conflicting, action='approve', agency_response='Sure')
+        self.assertRedirects(response, reverse('agencyrequests:inbox'), fetch_redirect_response=False)
+        self.assertIn(
+            'Could not approve: the Toyota Innova is already booked for some of those dates.',
+            messages_text(response),
+        )
+        conflicting.refresh_from_db()
+        approved.refresh_from_db()
+        self.assertEqual(conflicting.status, 'pending')
+        self.assertIsNone(conflicting.decided_at)
+        self.assertEqual(approved.status, 'approved')
