@@ -9,6 +9,7 @@ from apps.accounts.models import AgencyProfile
 from apps.bookings.lifecycle import AGENCY_CANCEL_PREFIX
 from apps.bookings.models import Booking
 from apps.mybookings.tests import BookingStatusTestBase
+from apps.usersettings.models import UserSettings
 
 User = get_user_model()
 
@@ -335,3 +336,51 @@ class DecideRulesTests(BookingStatusTestBase):
         self.assertEqual(conflicting.status, 'pending')
         self.assertIsNone(conflicting.decided_at)
         self.assertEqual(approved.status, 'approved')
+
+
+class InboxRenterContactPrivacyTests(BookingStatusTestBase):
+    """The inbox respects the renter's "Show contact number" setting."""
+
+    NUMBER = '0917 555 6789'
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        User.objects.filter(pk=cls.renter_user.pk).update(contact_number=cls.NUMBER)
+        today = timezone.localdate()
+        cls.pending_trip = cls.make_trip('PRV 0301', 'Innova', today, 10, 12, status='pending')
+
+    def setUp(self):
+        self.client.force_login(self.agency_user)
+
+    def get_inbox(self):
+        return self.client.get(reverse('agencyrequests:inbox'))
+
+    def contacts(self, response, section):
+        return [b.renter_contact for b in response.context[section]]
+
+    def test_number_shown_when_renter_allows_it(self):
+        UserSettings.objects.filter(user=self.renter_user).update(show_contact_number=True)
+        response = self.get_inbox()
+        self.assertEqual(self.contacts(response, 'pending'), [self.NUMBER])
+        # Both the in-progress and the upcoming trip cards show it.
+        self.assertEqual(self.contacts(response, 'active'), [self.NUMBER, self.NUMBER])
+        self.assertContains(
+            response, f'<p class="request-renter-contact">{self.NUMBER}</p>', count=3, html=True
+        )
+
+    def test_number_absent_when_renter_hides_it(self):
+        UserSettings.objects.filter(user=self.renter_user).update(show_contact_number=False)
+        response = self.get_inbox()
+        self.assertEqual(self.contacts(response, 'pending'), [''])
+        self.assertEqual(self.contacts(response, 'active'), ['', ''])
+        self.assertNotContains(response, self.NUMBER)
+        self.assertNotContains(response, 'request-renter-contact')
+
+    def test_number_shown_when_renter_has_no_settings_row(self):
+        UserSettings.objects.filter(user=self.renter_user).delete()
+        response = self.get_inbox()
+        self.assertEqual(self.contacts(response, 'pending'), [self.NUMBER])
+        self.assertContains(
+            response, f'<p class="request-renter-contact">{self.NUMBER}</p>', count=3, html=True
+        )

@@ -17,7 +17,7 @@ AutoLease is a car rental platform that connects renters with local rental agenc
 - My bookings: every request with its status. Approved trips show Upcoming, In progress or Completed based on their dates. Pending requests can be cancelled at any time, and approved trips until the day before pick-up.
 - Leave one review (1 to 5 stars and a comment) after a trip has ended. It appears on the car page with the renter's first name only.
 - Saved cars: heart a car to save it. Saved cars that become unavailable can still be removed.
-- Settings: email notifications on or off, and password change. The "Show contact number" toggle currently has no effect for renters: agencies always see a renter's contact number on their booking requests.
+- Settings: email notifications on or off, whether agencies can see the renter's contact number on their booking requests, and password change.
 
 ### Agencies
 - My listings: add and edit cars, set their status (Available, Unavailable or Maintenance), upload up to 10 photos per car and choose the main photo, and delete cars that have no booking history.

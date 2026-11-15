@@ -37,8 +37,8 @@
                             <span class="request-avatar">{{ booking.renter_name|make_list|first|upper }}</span>
                             <div>
                                 <p class="request-renter-name">{{ booking.renter_name }}</p>
-                                {% if booking.renter.contact_number %}
-                                    <p class="request-renter-contact">{{ booking.renter.contact_number }}</p>
+                                {% if booking.renter_contact %}
+                                    <p class="request-renter-contact">{{ booking.renter_contact }}</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -80,8 +80,8 @@
                             <span class="request-avatar">{{ booking.renter_name|make_list|first|upper }}</span>
                             <div>
                                 <p class="request-renter-name">{{ booking.renter_name }}</p>
-                                {% if booking.renter.contact_number %}
-                                    <p class="request-renter-contact">{{ booking.renter.contact_number }}</p>
+                                {% if booking.renter_contact %}
+                                    <p class="request-renter-contact">{{ booking.renter_contact }}</p>
                                 {% endif %}
                             </div>
                         </div>

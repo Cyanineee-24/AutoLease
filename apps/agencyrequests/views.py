@@ -9,6 +9,7 @@ from apps.accounts.decorators import agency_required
 from apps.bookings.lifecycle import AGENCY_CANCEL_PREFIX, display_status, trip_phase
 from apps.bookings.models import Booking
 from apps.bookings.notifications import notify_cancelled_by_agency, notify_decision
+from apps.usersettings.models import UserSettings
 
 from .forms import CancelTripForm, DecisionForm
 
@@ -27,8 +28,19 @@ def inbox(request):
         .select_related('vehicle', 'renter')
         .order_by('start_date', 'created_at')
     )
+    # One query for every renter's privacy choice. A missing settings row means
+    # the default (shown), the same rule fleet/views.py uses for agencies.
+    hidden_contact_ids = set(
+        UserSettings.objects.filter(
+            user_id__in={b.renter_id for b in bookings},
+            show_contact_number=False,
+        ).values_list('user_id', flat=True)
+    )
     today = timezone.localdate()
     for booking in bookings:
+        booking.renter_contact = (
+            '' if booking.renter_id in hidden_contact_ids else booking.renter.contact_number or ''
+        )
         booking.status_key, booking.status_label = display_status(booking, today)
         booking.phase = trip_phase(booking, today)
         booking.days = (booking.end_date - booking.start_date).days + 1
