@@ -213,3 +213,146 @@ class CancelBookingTests(BookingStatusTestBase):
         self.assertContains(response, 'The car failed inspection.')
         self.assertNotContains(response, 'Cancelled by the agency: ')
         self.assertContains(response, '<span class="status-badge status-badge--cancelled">Cancelled by agency</span>', html=True)
+
+
+def messages_text(response):
+    return ' '.join(str(m) for m in get_messages(response.wsgi_request))
+
+
+class ReviewTests(BookingStatusTestBase):
+    REFUSED = 'You can review a trip once, after it has ended.'
+
+    def setUp(self):
+        self.today = timezone.localdate()
+        self.client.force_login(self.renter_user)
+        self.ended_yesterday = self.make_trip('END 2001', 'Fortuner', self.today, -3, -1)
+
+    def review_url(self, booking):
+        return reverse('mybookings:review', args=[booking.pk])
+
+    def post_review(self, booking, **data):
+        with self.captureOnCommitCallbacks(execute=True):
+            return self.client.post(self.review_url(booking), data)
+
+    def test_review_finished_trip(self):
+        page = self.client.get(self.review_url(self.ended_yesterday))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'name="rating"')
+        self.assertContains(page, 'name="comment"')
+
+        response = self.post_review(self.ended_yesterday, rating='5', comment='Spotless car, easy pick-up.')
+        self.assertRedirects(response, reverse('mybookings:list'), fetch_redirect_response=False)
+        self.assertIn('Thanks! Your review is now on the car page.', messages_text(response))
+        review = Review.objects.get(booking=self.ended_yesterday)
+        self.assertEqual(review.rating, 5)
+        self.assertEqual(review.comment, 'Spotless car, easy pick-up.')
+        self.ended_yesterday.refresh_from_db()
+        self.assertEqual(self.ended_yesterday.status, 'completed')
+
+    def test_second_review_refused(self):
+        self.post_review(self.ended_yesterday, rating='5')
+        for response in (
+            self.client.get(self.review_url(self.ended_yesterday)),
+            self.post_review(self.ended_yesterday, rating='1', comment='Changed my mind'),
+        ):
+            self.assertRedirects(response, reverse('mybookings:list'), fetch_redirect_response=False)
+            self.assertIn(self.REFUSED, messages_text(response))
+        self.assertEqual(Review.objects.filter(booking=self.ended_yesterday).count(), 1)
+        self.assertEqual(Review.objects.get(booking=self.ended_yesterday).rating, 5)
+
+    def test_unfinished_or_non_approved_trips_refused(self):
+        cases = [
+            self.make_trip('TOD 2002', 'Hilux', self.today, -2, 0),                       # ends today
+            self.future_trip,                                                             # future
+            self.current_trip,                                                            # in progress
+            self.make_trip('PEN 2003', 'Jimny', self.today, -5, -3, status='pending'),
+            self.make_trip('DEC 2004', 'Navara', self.today, -5, -3, status='declined'),
+            self.make_trip('CAN 2005', 'Stargazer', self.today, -5, -3, status='cancelled'),
+        ]
+        for booking in cases:
+            with self.subTest(status=booking.status, end=booking.end_date):
+                for response in (
+                    self.client.get(self.review_url(booking)),
+                    self.post_review(booking, rating='5'),
+                ):
+                    self.assertRedirects(response, reverse('mybookings:list'), fetch_redirect_response=False)
+                    self.assertIn(self.REFUSED, messages_text(response))
+                self.assertFalse(Review.objects.filter(booking=booking).exists())
+
+    def test_invalid_rating_or_long_comment_rejected(self):
+        cases = [
+            ({}, 'Pick a star rating.'),
+            ({'rating': '0'}, 'Select a valid choice.'),
+            ({'rating': '6'}, 'Select a valid choice.'),
+            ({'rating': '5', 'comment': 'x' * 1001}, 'Ensure this value has at most 1000 characters'),
+        ]
+        for data, error in cases:
+            with self.subTest(data=data.get('rating'), comment_len=len(data.get('comment', ''))):
+                response = self.post_review(self.ended_yesterday, **data)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, error)
+                self.assertFalse(Review.objects.filter(booking=self.ended_yesterday).exists())
+                self.ended_yesterday.refresh_from_db()
+                self.assertEqual(self.ended_yesterday.status, 'approved')
+
+    def test_other_renters_booking_404(self):
+        other = User.objects.create_user(
+            username='other@example.com', email='other@example.com', password='password123', is_renter=True,
+        )
+        self.client.force_login(other)
+        self.assertEqual(self.client.get(self.review_url(self.ended_yesterday)).status_code, 404)
+        self.assertEqual(self.post_review(self.ended_yesterday, rating='5').status_code, 404)
+        self.assertFalse(Review.objects.filter(booking=self.ended_yesterday).exists())
+
+    def test_review_appears_on_car_page_and_dashboard_card(self):
+        self.post_review(self.ended_yesterday, rating='5', comment='Would rent again.')
+        vehicle = self.ended_yesterday.vehicle
+        self.client.logout()
+
+        detail = self.client.get(reverse('fleet:vehicle_detail', args=[vehicle.pk]))
+        self.assertContains(detail, 'Would rent again.')
+        self.assertContains(detail, '<span class="review-author">Juan</span>', html=True)
+        self.assertNotContains(detail, 'renter@example.com')
+
+        dashboard = self.client.get(reverse('home:dashboard'))
+        card = next(v for v in dashboard.context['page_obj'] if v.pk == vehicle.pk)
+        self.assertEqual(card.review_count, 1)
+        self.assertEqual(card.avg_rating, 5)
+        self.assertContains(dashboard, '<span>5.0</span>', html=True)
+
+
+class MyBookingsListTests(BookingStatusTestBase):
+    def test_guest_redirected_to_login(self):
+        url = reverse('mybookings:list')
+        response = self.client.get(url)
+        self.assertRedirects(response, f"{reverse('login:login')}?next={url}", fetch_redirect_response=False)
+
+    def test_only_own_bookings_newest_first(self):
+        other = User.objects.create_user(
+            username='other@example.com', email='other@example.com', password='password123', is_renter=True,
+        )
+        others_trip = self.make_trip('OTH 3001', 'Innova', timezone.localdate(), 3, 4)
+        Booking.objects.filter(pk=others_trip.pk).update(renter=other)
+
+        now = timezone.now()
+        for hours_ago, booking in ((3, self.future_trip), (2, self.current_trip), (1, self.past_trip)):
+            Booking.objects.filter(pk=booking.pk).update(created_at=now - datetime.timedelta(hours=hours_ago))
+
+        self.client.force_login(self.renter_user)
+        response = self.client.get(reverse('mybookings:list'))
+        self.assertEqual(
+            [b.pk for b in response.context['bookings']],
+            [self.past_trip.pk, self.current_trip.pk, self.future_trip.pk],
+        )
+        self.assertNotContains(response, 'Toyota Innova')
+        self.assertContains(response, '3 requests')
+
+    def test_empty_state(self):
+        empty = User.objects.create_user(
+            username='new@example.com', email='new@example.com', password='password123', is_renter=True,
+        )
+        self.client.force_login(empty)
+        response = self.client.get(reverse('mybookings:list'))
+        self.assertContains(response, 'No trips booked... yet')
+        self.assertContains(response, f'<a class="button" href="{reverse("home:dashboard")}">Browse cars</a>', html=True)
+        self.assertEqual(list(response.context['bookings']), [])
