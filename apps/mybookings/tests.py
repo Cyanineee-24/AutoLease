@@ -195,7 +195,8 @@ class CancelBookingTests(BookingStatusTestBase):
     def test_cancel_trip_button_only_for_upcoming(self):
         response = self.client.get(reverse('mybookings:list'))
         self.assertContains(response, reverse('mybookings:cancel', args=[self.future_trip.pk]))
-        self.assertContains(response, 'Cancel trip', count=1)
+        # Count the button itself; the form's data-confirm-action label also says "Cancel trip".
+        self.assertContains(response, '>Cancel trip</button>', count=1)
         self.assertContains(
             response,
             'data-confirm="Cancel this trip? The agency will be told and the dates will open up for others."',
