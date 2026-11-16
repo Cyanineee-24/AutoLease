@@ -214,7 +214,7 @@ a { color: inherit; text-decoration: none; }
 /* ----------------------------------------------------------------
    Buttons (global)
    Kinds: .button (filled), .button-outline, .button-danger,
-   .button-danger-outline.
+   .button-danger-outline, .back-button (outline with a left chevron).
    Sizes: .button-small, .button-compact (padding and type only;
    every button keeps the 44px minimum touch height).
    ---------------------------------------------------------------- */
@@ -222,7 +222,8 @@ a { color: inherit; text-decoration: none; }
 .button,
 .button-outline,
 .button-danger,
-.button-danger-outline {
+.button-danger-outline,
+.back-button {
     align-items: center;
     border-radius: 8px;
     cursor: pointer;
@@ -243,7 +244,8 @@ a { color: inherit; text-decoration: none; }
     padding: 13px 20px;
 }
 
-.button-outline {
+.button-outline,
+.back-button {
     background: var(--color-surface);
     border: 1px solid var(--color-text);
     color: var(--color-text);
@@ -271,6 +273,7 @@ a { color: inherit; text-decoration: none; }
 
 .button-small { padding: 9px 16px; }
 .button-compact { font-size: 0.85rem; padding: 6px 12px; }
+.back-button { padding-left: 12px; }
 
 /* Hover: never on disabled buttons. */
 .button:hover:not(:disabled):not([aria-disabled="true"]) {
@@ -278,7 +281,8 @@ a { color: inherit; text-decoration: none; }
     border-color: var(--color-primary-dark);
 }
 
-.button-outline:hover:not(:disabled):not([aria-disabled="true"]) {
+.button-outline:hover:not(:disabled):not([aria-disabled="true"]),
+.back-button:hover:not([aria-disabled="true"]) {
     background: var(--color-background);
 }
 
@@ -297,7 +301,8 @@ a { color: inherit; text-decoration: none; }
 .button:focus-visible,
 .button-outline:focus-visible,
 .button-danger:focus-visible,
-.button-danger-outline:focus-visible {
+.button-danger-outline:focus-visible,
+.back-button:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
 }
@@ -305,7 +310,8 @@ a { color: inherit; text-decoration: none; }
 .button:disabled, .button[aria-disabled="true"],
 .button-outline:disabled, .button-outline[aria-disabled="true"],
 .button-danger:disabled, .button-danger[aria-disabled="true"],
-.button-danger-outline:disabled, .button-danger-outline[aria-disabled="true"] {
+.button-danger-outline:disabled, .button-danger-outline[aria-disabled="true"],
+.back-button[aria-disabled="true"] {
     cursor: not-allowed;
     opacity: 0.55;
 }
@@ -314,14 +320,16 @@ a { color: inherit; text-decoration: none; }
     .button,
     .button-outline,
     .button-danger,
-    .button-danger-outline {
+    .button-danger-outline,
+    .back-button {
         transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 100ms ease;
     }
 
     .button:active:not(:disabled):not([aria-disabled="true"]),
     .button-outline:active:not(:disabled):not([aria-disabled="true"]),
     .button-danger:active:not(:disabled):not([aria-disabled="true"]),
-    .button-danger-outline:active:not(:disabled):not([aria-disabled="true"]) {
+    .button-danger-outline:active:not(:disabled):not([aria-disabled="true"]),
+    .back-button:active:not([aria-disabled="true"]) {
         transform: scale(0.98);
     }
 }
@@ -436,6 +444,10 @@ h1, h2, h3 { letter-spacing: -0.03em; line-height: 1.12; }
 .optional { color: var(--color-muted); font-weight: 400; }
 .auth-footer { color: var(--color-muted); font-size: 0.92rem; margin: 24px 0 0; }
 .auth-footer a { color: var(--color-primary); font-weight: 700; }
+/* Back button above a centred .auth-card: the wrapper is the card's width,
+   so the button lines up with the card's left edge. */
+.auth-stack { display: grid; gap: 16px; justify-items: start; max-width: 460px; width: 100%; }
+.auth-stack > .auth-card { justify-self: stretch; }
 
 
 /* ----------------------------------------------------------------

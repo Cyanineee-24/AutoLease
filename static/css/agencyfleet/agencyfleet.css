@@ -52,8 +52,7 @@
 
 /* ---- Add / edit form ---- */
 .listings-container--narrow { max-width: 760px; }
-.listings-back { color: var(--color-muted); display: inline-block; font-size: 0.9rem; font-weight: 600; margin-bottom: 16px; }
-.listings-back:hover { color: var(--color-text); }
+.listings-container > .back-button { margin-bottom: 16px; }
 .vehicle-form-card { padding: 32px; }
 .vehicle-form-card h1 { font-size: 1.75rem; margin: 0; overflow-wrap: anywhere; }
 .vehicle-form { margin-top: 24px; }

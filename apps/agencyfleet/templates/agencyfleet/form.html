@@ -9,7 +9,8 @@
 
 {% block content %}
 <section class="listings-container listings-container--narrow">
-    <a class="listings-back" href="{% url 'agencyfleet:list' %}">&larr; My listings</a>
+    {% url 'agencyfleet:list' as back_url %}
+    {% include '_back_button.html' with url=back_url label='Back to my listings' %}
 
     <div class="card vehicle-form-card">
         <p class="eyebrow">Agency</p>
