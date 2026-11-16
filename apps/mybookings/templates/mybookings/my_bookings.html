@@ -69,7 +69,7 @@
 
                     {% if booking.can_cancel %}
                         {% if booking.status == 'pending' %}
-                            <form method="post" action="{% url 'mybookings:cancel' booking.pk %}" class="booking-actions" data-confirm-title="Cancel this request?" data-confirm-action="Cancel request" data-confirm-danger data-confirm="Cancel this request?">
+                            <form method="post" action="{% url 'mybookings:cancel' booking.pk %}" class="booking-actions" data-confirm-title="Cancel this request?" data-confirm-action="Cancel request" data-confirm-danger data-confirm="The agency will see it as cancelled. You can send a new request later.">
                                 {% csrf_token %}
                                 <button type="submit" class="button-outline">Cancel request</button>
                             </form>

@@ -65,19 +65,3 @@
     letter-spacing: -0.02em;
     margin: 0 0 4px;
 }
-
-
-/* ---- Outline button variant ---- */
-
-.button-outline {
-    background: transparent;
-    border: 1.5px solid var(--color-border);
-    color: var(--color-text);
-    margin-top: 12px;
-}
-
-.button-outline:hover,
-.button-outline:focus {
-    background: var(--color-background);
-    border-color: var(--color-text);
-}

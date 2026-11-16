@@ -67,7 +67,7 @@
                                 <button type="submit" class="button-outline button-compact">Set as main photo</button>
                             </form>
                         {% endif %}
-                        <form method="post" action="{% url 'agencyfleet:photo_delete' vehicle.pk image.pk %}" class="listing-delete-form" data-confirm-title="Delete this photo?" data-confirm-action="Delete photo" data-confirm-danger data-confirm="Delete this photo?">
+                        <form method="post" action="{% url 'agencyfleet:photo_delete' vehicle.pk image.pk %}" class="listing-delete-form" data-confirm-title="Delete this photo?" data-confirm-action="Delete photo" data-confirm-danger data-confirm="It will be removed from this listing for good.">
                             {% csrf_token %}
                             <button type="submit" class="listing-delete-button">Delete</button>
                         </form>

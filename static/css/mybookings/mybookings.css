@@ -59,19 +59,8 @@
 .status-badge--cancelled { background: #EEEEEE; color: #555555; }
 .status-badge--completed { background: #E3F2FD; color: #0D47A1; }
 
-.button-outline {
-    background: #FFFFFF;
-    border: 1px solid #222222;
-    border-radius: 8px;
-    color: #222222;
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: 9px 16px;
-    white-space: nowrap;
-}
-.button-outline:hover { background: #F7F7F7; }
+/* The shared .button-outline lives in site.css; here it only must not wrap. */
+.booking-actions .button-outline { white-space: nowrap; }
 
 @media (max-width: 640px) {
     .booking-row { grid-template-columns: 1fr; }
