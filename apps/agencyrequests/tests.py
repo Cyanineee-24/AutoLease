@@ -71,7 +71,7 @@ class InboxSectionsTests(BookingStatusTestBase):
         self.assertContains(response, "Trip in progress. It can't be cancelled.")
         self.assertContains(response, 'Reason for cancelling (the renter will see this)')
         self.assertContains(response, 'data-confirm="Cancel this trip? The renter will see your reason."')
-        self.assertContains(response, 'js/agencyrequests/agencyrequests.js')
+        self.assertContains(response, 'js/confirm.js')
 
     def test_section_hidden_when_no_active_trips(self):
         Booking.objects.filter(pk__in=[self.future_trip.pk, self.current_trip.pk]).update(status='declined')

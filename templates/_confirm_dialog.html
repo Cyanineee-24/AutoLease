@@ -1,0 +1,16 @@
+{# Themed confirmation for any form[data-confirm]. Included once in base.html and driven by js/confirm.js. #}
+<dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-text">
+    <div class="confirm-dialog-body">
+        <button type="button" class="confirm-dialog-close" aria-label="Close" data-confirm-close>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+
+        <h2 id="confirm-dialog-title" class="confirm-dialog-title">Are you sure?</h2>
+        <p id="confirm-dialog-text" class="confirm-dialog-text"></p>
+
+        <div class="confirm-dialog-actions">
+            <button type="button" class="button-outline" data-confirm-dismiss>Go back</button>
+            <button type="button" class="button" data-confirm-accept>Confirm</button>
+        </div>
+    </div>
+</dialog>

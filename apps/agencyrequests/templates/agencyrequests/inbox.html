@@ -96,7 +96,7 @@
                     </div>
 
                     {% if booking.phase == 'upcoming' %}
-                        <form method="post" action="{% url 'agencyrequests:cancel' booking.pk %}" class="request-decision" data-confirm="Cancel this trip? The renter will see your reason.">
+                        <form method="post" action="{% url 'agencyrequests:cancel' booking.pk %}" class="request-decision" data-confirm-title="Cancel this trip?" data-confirm-action="Cancel trip" data-confirm-danger data-confirm="Cancel this trip? The renter will see your reason.">
                             {% csrf_token %}
                             <label for="cancel-reason-{{ booking.pk }}" class="request-response-label">Reason for cancelling (the renter will see this)</label>
                             <textarea id="cancel-reason-{{ booking.pk }}" name="reason" rows="3" maxlength="1000" required class="request-response-input" placeholder="e.g. The car failed its safety inspection."></textarea>
@@ -140,8 +140,4 @@
         </div>
     {% endif %}
 </section>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'js/agencyrequests/agencyrequests.js' %}" defer></script>
 {% endblock %}

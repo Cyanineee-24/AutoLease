@@ -459,6 +459,100 @@ h1, h2, h3 { letter-spacing: -0.03em; line-height: 1.12; }
 }
 
 
+/* ----------------------------------------------------------------
+   Confirmation dialog (templates/_confirm_dialog.html, js/confirm.js)
+   Same card as the guest login prompt.
+   ---------------------------------------------------------------- */
+
+.confirm-dialog {
+    background: var(--color-surface);
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
+    color: var(--color-text);
+    max-width: 400px;
+    padding: 0; /* padding lives on the body so backdrop clicks are unambiguous */
+    width: calc(100% - 32px);
+}
+
+.confirm-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.confirm-dialog-body {
+    padding: 28px 28px 24px;
+    position: relative;
+}
+
+.confirm-dialog-close {
+    align-items: center;
+    background: var(--color-background);
+    border: none;
+    border-radius: 50%;
+    color: var(--color-text);
+    cursor: pointer;
+    display: inline-flex;
+    height: 32px;
+    justify-content: center;
+    padding: 0;
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    transition: background-color 150ms ease;
+    width: 32px;
+}
+
+.confirm-dialog-close:hover { background: var(--color-border); }
+
+.confirm-dialog-close:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.confirm-dialog-title {
+    font-size: 20px;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    margin: 0 0 6px;
+    padding-right: 32px;
+}
+
+.confirm-dialog-text {
+    color: var(--color-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.confirm-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 22px;
+}
+
+@media (max-width: 480px) {
+    /* Stacked, with the confirm button on top. */
+    .confirm-dialog-actions { flex-direction: column-reverse; }
+    .confirm-dialog-actions > * { width: 100%; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .confirm-dialog[open] { animation: confirm-dialog-in 150ms ease-out; }
+    .confirm-dialog[open]::backdrop { animation: confirm-dialog-fade 150ms ease-out; }
+
+    @keyframes confirm-dialog-in {
+        from { opacity: 0; transform: scale(0.96); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes confirm-dialog-fade {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+}
+
 
 /* ----------------------------------------------------------------
    Utilities

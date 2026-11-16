@@ -76,7 +76,11 @@
                         <div class="listing-actions">
                             <a class="button-outline button-compact" href="{% url 'agencyfleet:edit' vehicle.pk %}">Edit</a>
                             <a class="button-outline button-compact" href="{% url 'agencyfleet:photos' vehicle.pk %}">Photos ({{ vehicle.images.all|length }})</a>
-                            <form method="post" action="{% url 'agencyfleet:status' vehicle.pk %}" class="listing-status-form">
+                            <form method="post" action="{% url 'agencyfleet:status' vehicle.pk %}" class="listing-status-form"
+                                  data-confirm-when="status:unavailable,maintenance"
+                                  data-confirm-title="Take this car off the browse page?"
+                                  data-confirm="Renters won't be able to find or book it until you set it back to Available."
+                                  data-confirm-action="Change status">
                                 {% csrf_token %}
                                 <label for="status-{{ vehicle.pk }}" class="sr-only">Status for {{ vehicle.make }} {{ vehicle.model }}</label>
                                 <select id="status-{{ vehicle.pk }}" name="status" class="listing-status-select">
@@ -90,7 +94,7 @@
                                 <a class="listing-link" href="{% url 'fleet:vehicle_detail' vehicle.pk %}">View listing</a>
                             {% endif %}
                             {% if not vehicle.booking_count %}
-                                <form method="post" action="{% url 'agencyfleet:delete' vehicle.pk %}" class="listing-delete-form" data-confirm="Delete the {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}? This can't be undone.">
+                                <form method="post" action="{% url 'agencyfleet:delete' vehicle.pk %}" class="listing-delete-form" data-confirm-title="Delete this car?" data-confirm-action="Delete car" data-confirm-danger data-confirm="Delete the {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}? This can't be undone.">
                                     {% csrf_token %}
                                     <button type="submit" class="listing-delete-button">Delete</button>
                                 </form>
@@ -102,8 +106,4 @@
         </ul>
     {% endif %}
 </section>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'js/agencyfleet/agencyfleet.js' %}" defer></script>
 {% endblock %}
