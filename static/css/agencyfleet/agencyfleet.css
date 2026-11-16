@@ -44,21 +44,6 @@
 .listing-delete-button { background: none; border: 0; color: #B00020; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 600; padding: 0; text-decoration: underline; }
 .listing-delete-button:hover { color: #7F0017; }
 
-.button-outline {
-    background: var(--color-surface);
-    border: 1px solid var(--color-text);
-    border-radius: 8px;
-    color: var(--color-text);
-    cursor: pointer;
-    display: inline-block;
-    font: inherit;
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: 9px 16px;
-}
-.button-outline:hover { background: #F7F7F7; }
-.button-compact { font-size: 0.85rem; padding: 6px 12px; }
-
 .listing-status-form { align-items: center; display: inline-flex; gap: 6px; }
 .listing-status-select { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; font: inherit; font-size: 0.85rem; padding: 6px 8px; }
 .listing-status-select:focus { border-color: var(--color-primary); outline: 2px solid rgba(230, 30, 77, 0.18); }

@@ -11,6 +11,7 @@
     --color-background: #F7F7F7;
     --color-surface: #FFFFFF;
     --color-border: #DDDDDD;
+    --color-danger: #B00020;
     --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
 
     /* Navbar-specific tokens */
@@ -212,28 +213,118 @@ a { color: inherit; text-decoration: none; }
 
 /* ----------------------------------------------------------------
    Buttons (global)
+   Kinds: .button (filled), .button-outline, .button-danger,
+   .button-danger-outline.
+   Sizes: .button-small, .button-compact (padding and type only;
+   every button keeps the 44px minimum touch height).
    ---------------------------------------------------------------- */
+
+.button,
+.button-outline,
+.button-danger,
+.button-danger-outline {
+    align-items: center;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    gap: 6px;
+    justify-content: center;
+    min-height: 44px;
+    text-align: center;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
 
 .button {
     background: var(--color-primary);
     border: 1px solid var(--color-primary);
-    border-radius: 8px;
     color: #FFFFFF;
-    cursor: pointer;
-    display: inline-block;
-    font: inherit;
     font-weight: 700;
     padding: 13px 20px;
-    text-align: center;
-    transition: background-color 150ms ease, border-color 150ms ease;
 }
 
-.button:hover, .button:focus {
+.button-outline {
+    background: var(--color-surface);
+    border: 1px solid var(--color-text);
+    color: var(--color-text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 9px 16px;
+}
+
+.button-danger {
+    background: var(--color-danger);
+    border: 1px solid var(--color-danger);
+    color: #FFFFFF;
+    font-weight: 700;
+    padding: 13px 20px;
+}
+
+.button-danger-outline {
+    background: var(--color-surface);
+    border: 1px solid var(--color-danger);
+    color: var(--color-danger);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 9px 16px;
+}
+
+.button-small { padding: 9px 16px; }
+.button-compact { font-size: 0.85rem; padding: 6px 12px; }
+
+/* Hover: never on disabled buttons. */
+.button:hover:not(:disabled):not([aria-disabled="true"]) {
     background: var(--color-primary-dark);
     border-color: var(--color-primary-dark);
 }
 
-.button-small { padding: 9px 16px; }
+.button-outline:hover:not(:disabled):not([aria-disabled="true"]) {
+    background: var(--color-background);
+}
+
+.button-danger:hover:not(:disabled):not([aria-disabled="true"]) {
+    background: #7F0017;
+    border-color: #7F0017;
+}
+
+.button-danger-outline:hover:not(:disabled):not([aria-disabled="true"]) {
+    background: var(--color-background);
+    border-color: #7F0017;
+    color: #7F0017;
+}
+
+/* Keyboard focus only, so a mouse click doesn't leave a ring behind. */
+.button:focus-visible,
+.button-outline:focus-visible,
+.button-danger:focus-visible,
+.button-danger-outline:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.button:disabled, .button[aria-disabled="true"],
+.button-outline:disabled, .button-outline[aria-disabled="true"],
+.button-danger:disabled, .button-danger[aria-disabled="true"],
+.button-danger-outline:disabled, .button-danger-outline[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .button,
+    .button-outline,
+    .button-danger,
+    .button-danger-outline {
+        transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 100ms ease;
+    }
+
+    .button:active:not(:disabled):not([aria-disabled="true"]),
+    .button-outline:active:not(:disabled):not([aria-disabled="true"]),
+    .button-danger:active:not(:disabled):not([aria-disabled="true"]),
+    .button-danger-outline:active:not(:disabled):not([aria-disabled="true"]) {
+        transform: scale(0.98);
+    }
+}
 
 
 /* ----------------------------------------------------------------
