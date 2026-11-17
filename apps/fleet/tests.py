@@ -424,6 +424,83 @@ class FavoriteToggleTests(FleetTestBase):
         resp = self.client.post(url, {'next': '/dashboard/'})
         self.assertRedirects(resp, '/dashboard/')
 
+    # ---- `saved` asks for a state instead of a flip ----
+
+    def post_saved(self, value, vehicle=None):
+        url = reverse('fleet:favorite_toggle', args=[(vehicle or self.vehicle).pk])
+        return self.client.post(url, {'saved': value}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def favorite_count(self, vehicle=None):
+        return Favorite.objects.filter(user=self.renter_user, vehicle=vehicle or self.vehicle).count()
+
+    def test_saved_1_twice_leaves_exactly_one_row(self):
+        self.client.force_login(self.renter_user)
+        for _ in range(2):
+            response = self.post_saved('1')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json(), {'favorited': True})
+        self.assertEqual(self.favorite_count(), 1)
+
+    def test_saved_0_twice_leaves_none_and_both_succeed(self):
+        Favorite.objects.create(user=self.renter_user, vehicle=self.vehicle)
+        self.client.force_login(self.renter_user)
+        for _ in range(2):
+            response = self.post_saved('0')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json(), {'favorited': False})
+        self.assertEqual(self.favorite_count(), 0)
+
+    def test_saved_0_works_on_unavailable_car(self):
+        Favorite.objects.create(user=self.renter_user, vehicle=self.vehicle)
+        Vehicle.objects.filter(pk=self.vehicle.pk).update(status='maintenance')
+        self.client.force_login(self.renter_user)
+        response = self.post_saved('0')
+        self.assertEqual(response.json(), {'favorited': False})
+        self.assertEqual(self.favorite_count(), 0)
+
+    def test_saved_1_on_unavailable_car_not_yet_saved_is_404(self):
+        Vehicle.objects.filter(pk=self.vehicle.pk).update(status='unavailable')
+        self.client.force_login(self.renter_user)
+        self.assertEqual(self.post_saved('1').status_code, 404)
+        self.assertEqual(self.favorite_count(), 0)
+
+    def test_saved_1_on_unavailable_car_already_saved_stays_saved(self):
+        Favorite.objects.create(user=self.renter_user, vehicle=self.vehicle)
+        Vehicle.objects.filter(pk=self.vehicle.pk).update(status='unavailable')
+        self.client.force_login(self.renter_user)
+        response = self.post_saved('1')
+        self.assertEqual(response.json(), {'favorited': True})
+        self.assertEqual(self.favorite_count(), 1)
+
+    def test_other_saved_values_toggle_like_no_field(self):
+        self.client.force_login(self.renter_user)
+        for value, expected in (('', True), ('yes', False), ('true', True), ('2', False)):
+            with self.subTest(value=value):
+                self.assertEqual(self.post_saved(value).json(), {'favorited': expected})
+
+    def test_saved_field_keeps_the_redirect_for_plain_posts(self):
+        self.client.force_login(self.renter_user)
+        url = reverse('fleet:favorite_toggle', args=[self.vehicle.pk])
+        response = self.client.post(url, {'saved': '1', 'next': '/dashboard/'})
+        self.assertRedirects(response, '/dashboard/')
+        self.assertEqual(self.favorite_count(), 1)
+
+    def test_query_counts_do_not_grow(self):
+        """Session + user + vehicle, then at most two more (the old toggle's cost)."""
+        self.client.force_login(self.renter_user)
+        url = reverse('fleet:favorite_toggle', args=[self.vehicle.pk])
+        for data, expected in (
+            ({'saved': '1'}, 4),   # one INSERT ... ON CONFLICT DO NOTHING
+            ({'saved': '1'}, 4),
+            ({'saved': '0'}, 4),   # one DELETE
+            ({'saved': '0'}, 4),
+            ({}, 5),               # toggle: exists + insert
+            ({}, 5),               # toggle: exists + delete
+        ):
+            with self.subTest(data=data):
+                with self.assertNumQueries(expected):
+                    self.client.post(url, data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
     def test_dashboard_renders_aria_pressed_for_favorited_car(self):
         Favorite.objects.create(user=self.renter_user, vehicle=self.vehicle)
         self.client.force_login(self.renter_user)

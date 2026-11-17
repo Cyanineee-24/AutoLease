@@ -16,11 +16,34 @@ from apps.usersettings.models import UserSettings
 @login_required
 @require_POST
 def favorite_toggle(request, pk):
-    vehicle = get_object_or_404(Vehicle, pk=pk)
+    """Save or un-save a car.
 
+    POST field `saved` asks for a state instead of a flip, so repeated or
+    out-of-order requests from the heart button always end where the user did:
+      saved=1  make sure the car is saved
+      saved=0  make sure it is not
+      absent   toggle (what the plain HTML form does)
+    """
+    vehicle = get_object_or_404(Vehicle, pk=pk)
     favorite = Favorite.objects.filter(user=request.user, vehicle=vehicle)
-    if favorite.exists():
+    wanted = request.POST.get('saved')
+
+    if wanted == '0':
         # Un-saving always works, so cars that went unavailable can be removed.
+        # Nothing to delete is fine too.
+        favorite.delete()
+        favorited = False
+    elif wanted == '1':
+        if vehicle.status == 'available':
+            # One INSERT that does nothing if the row is already there, so two
+            # requests at once can't create a duplicate or raise.
+            Favorite.objects.bulk_create(
+                [Favorite(user=request.user, vehicle=vehicle)], ignore_conflicts=True,
+            )
+        elif not favorite.exists():
+            raise Http404('Vehicle is not available.')
+        favorited = True
+    elif favorite.exists():
         favorite.delete()
         favorited = False
     else:
