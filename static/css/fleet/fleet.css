@@ -108,6 +108,18 @@
     }
 }
 
+/* "Couldn't update" message from favorites.js: one live region, bottom centre. */
+.favorite-toast {
+    bottom: 24px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+    left: 50%;
+    max-width: calc(100% - 32px);
+    position: fixed;
+    transform: translateX(-50%);
+    width: max-content;
+    z-index: 200;
+}
+
 .vehicle-card-body {
     display: flex;
     flex-direction: column;
