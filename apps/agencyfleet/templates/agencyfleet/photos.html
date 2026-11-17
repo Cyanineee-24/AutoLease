@@ -4,7 +4,7 @@
 {% block title %}Photos · {{ vehicle.make }} {{ vehicle.model }} | AutoLease{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/agencyfleet/agencyfleet.css' %}">
+<link rel="stylesheet" href="{% static 'css/agencyfleet/agencyfleet.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
@@ -124,5 +124,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/agencyfleet/photos.js' %}" defer></script>
+<script src="{% static 'js/agencyfleet/photos.js' %}?v=6" defer></script>
 {% endblock %}

@@ -5,7 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/home/home.css' %}">
-<link rel="stylesheet" href="{% static 'css/fleet/fleet.css' %}">
+<link rel="stylesheet" href="{% static 'css/fleet/fleet.css' %}?v=6">
 {% endblock %}
 
 {% block content %}
@@ -125,5 +125,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/fleet/favorites.js' %}" defer></script>
+<script src="{% static 'js/fleet/favorites.js' %}?v=6" defer></script>
 {% endblock %}
