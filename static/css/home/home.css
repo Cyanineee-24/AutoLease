@@ -21,7 +21,7 @@
     display: flex;
     margin: 0 auto;
     max-width: 860px;
-    overflow: hidden;
+    position: relative;
     transition: box-shadow 150ms ease, border-color 150ms ease;
 }
 
@@ -91,6 +91,50 @@
 
 
 /* ----------------------------------------------------------------
+   Search suggestions (js/home/suggest.js)
+   ---------------------------------------------------------------- */
+
+.search-field--suggest { position: relative; }
+
+.suggest-list {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+    left: 0;
+    list-style: none;
+    margin: 0;
+    max-height: 340px;
+    min-width: 280px;
+    overflow-y: auto;
+    padding: 8px;
+    position: absolute;
+    top: calc(100% + 10px);
+    width: 100%;
+    z-index: 50; /* above the car grid and its heart buttons */
+}
+
+.suggest-option,
+.suggest-empty {
+    align-items: center;
+    border-radius: 10px;
+    display: flex;
+    font-size: 0.92rem;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 12px;
+}
+
+.suggest-option { cursor: pointer; }
+.suggest-option.is-active { background: #F7F7F7; }
+.suggest-icon { color: var(--color-muted); flex-shrink: 0; }
+.suggest-label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.suggest-label strong { font-weight: 700; }
+.suggest-meta { color: var(--color-muted); flex-shrink: 0; font-size: 0.8rem; }
+.suggest-empty { color: var(--color-muted); }
+
+
+/* ----------------------------------------------------------------
    Empty State
    ---------------------------------------------------------------- */
 
@@ -130,6 +174,8 @@
     .search-bar { flex-direction: column; border-radius: 16px; }
     .search-divider { height: 1px; width: 100%; }
     .search-field { padding: 8px 18px; width: 100%; }
+    /* Stacked bar: the list spans the field and stays inside the screen. */
+    .suggest-list { left: 8px; min-width: 0; top: calc(100% + 4px); width: calc(100% - 16px); }
     .search-button { margin: 8px auto 10px; }
     .empty-state { min-height: calc(100vh - 260px); }
 }
