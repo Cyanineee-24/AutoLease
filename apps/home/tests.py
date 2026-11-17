@@ -136,6 +136,110 @@ class DashboardViewTests(TestCase):
         self.assertContains(resp, 'value="2026-10-25"')
 
 
+class SuggestTests(TestCase):
+    """dashboard/suggest/: cities for Where, makes and models for What."""
+
+    @classmethod
+    def setUpTestData(cls):
+        agency_user = User.objects.create_user(
+            username='suggest-agency@example.com', email='suggest-agency@example.com',
+            password='password123', is_agency=True,
+        )
+        cls.agency = AgencyProfile.objects.create(
+            user=agency_user, business_name='Suggest Rentals', contact_number='0917 000 2222',
+        )
+        cars = [
+            ('Toyota', 'Vios', 'Cebu City', 'available'),
+            ('Toyota', 'Innova', 'Cebu City', 'available'),
+            ('Honda', 'City', 'Cebu City', 'available'),
+            ('Toyota', 'Fortuner', 'Davao City', 'available'),
+            ('Toyota', 'Hilux', 'Cebu City', 'maintenance'),   # never counted
+            ('Nissan', 'Navara', 'Lapu-Lapu', 'maintenance'),  # its city is never suggested
+            ('Suzuki', 'Jimny', 'Talisay', 'unavailable'),     # neither is this one
+        ]
+        for index, (make, model, city, status) in enumerate(cars):
+            cls.make_car(make, model, city, status, f'SUG {index:04d}')
+
+    @classmethod
+    def make_car(cls, make, model, city, status, plate):
+        return Vehicle.objects.create(
+            agency=cls.agency, make=make, model=model, year=2022, plate_number=plate,
+            transmission='Automatic', fuel_type='Gasoline', seats=5, color='Silver',
+            daily_rate=Decimal('2000.00'), city=city, status=status,
+        )
+
+    def suggest(self, field, term):
+        response = self.client.get(reverse('home:suggest'), {'field': field, 'term': term})
+        self.assertEqual(response.status_code, 200)
+        return response.json()['suggestions']
+
+    def test_guests_get_json_that_is_never_cached(self):
+        response = self.client.get(reverse('home:suggest'), {'field': 'location', 'term': 'cebu'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+    def test_city_results_are_distinct_with_counts_of_available_cars(self):
+        self.assertEqual(
+            self.suggest('location', 'cebu'),
+            [{'value': 'Cebu City', 'label': 'Cebu City', 'meta': '3 cars'}],
+        )
+        self.assertEqual(
+            self.suggest('location', 'davao'),
+            [{'value': 'Davao City', 'label': 'Davao City', 'meta': '1 car'}],
+        )
+
+    def test_unavailable_cars_cities_are_never_suggested(self):
+        self.assertEqual(self.suggest('location', 'lapu'), [])
+        self.assertEqual(self.suggest('location', 'talisay'), [])
+
+    def test_city_starting_with_the_term_comes_first(self):
+        values = [item['value'] for item in self.suggest('location', 'city')]
+        self.assertCountEqual(values, ['Cebu City', 'Davao City'])
+        # Neither starts with "city", so the closer match decides; both are present once.
+        self.assertEqual(len(values), len(set(values)))
+        self.assertEqual([item['value'] for item in self.suggest('location', 'dav')][0], 'Davao City')
+
+    def test_typo_cebo_suggests_cebu_city(self):
+        self.assertIn('Cebu City', [item['value'] for item in self.suggest('location', 'cebo')])
+
+    def test_toy_returns_the_make_before_its_models(self):
+        items = self.suggest('q', 'toy')
+        values = [item['value'] for item in items]
+        self.assertEqual(values[0], 'Toyota')
+        self.assertEqual(items[0]['meta'], '3 cars')   # the maintenance Hilux doesn't count
+        self.assertCountEqual(values[1:], ['Toyota Vios', 'Toyota Innova', 'Toyota Fortuner'])
+        self.assertNotIn('Toyota Hilux', values)
+        self.assertEqual(items[1]['meta'], '1 car')
+
+    def test_model_term_suggests_only_the_pair(self):
+        self.assertEqual(
+            self.suggest('q', 'vios'),
+            [{'value': 'Toyota Vios', 'label': 'Toyota Vios', 'meta': '1 car'}],
+        )
+
+    def test_results_are_capped_at_six(self):
+        for index in range(8):
+            self.make_car('Kia', f'Model {index}', f'Town {index}', 'available', f'CAP {index:04d}')
+        self.assertEqual(len(self.suggest('location', 'town')), 6)
+        self.assertEqual(len(self.suggest('q', 'kia')), 6)
+
+    def test_empty_term_or_unknown_field_returns_nothing(self):
+        for field, term in (('location', ''), ('location', '   '), ('q', ''), ('city', 'cebu'), ('', 'cebu')):
+            with self.subTest(field=field, term=term):
+                self.assertEqual(self.suggest(field, term), [])
+
+    def test_post_is_refused(self):
+        response = self.client.post(reverse('home:suggest'), {'field': 'location', 'term': 'cebu'})
+        self.assertEqual(response.status_code, 405)
+
+    def test_query_count_is_fixed(self):
+        with self.assertNumQueries(1):
+            self.suggest('location', 'cebu')
+        with self.assertNumQueries(2):
+            self.suggest('q', 'toy')
+
+
 class GuestBrowsingTests(TestCase):
     @classmethod
     def setUpTestData(cls):

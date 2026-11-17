@@ -6,4 +6,5 @@ app_name = 'home'
 urlpatterns = [
     path('', views.landing, name='landing'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('dashboard/suggest/', views.suggest, name='suggest'),
 ]
