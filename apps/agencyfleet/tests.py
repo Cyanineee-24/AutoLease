@@ -148,6 +148,22 @@ class ListingsPageTests(AgencyFleetTestBase):
         response = self.client.get(reverse('agencyfleet:list'))
         self.assertNotContains(response, reverse('fleet:vehicle_detail', args=[self.vehicle.pk]))
 
+    def test_card_details(self):
+        self.make_booking(self.vehicle, 10, 12, 'pending')
+        maintenance = self.make_vehicle(self.agency_profile, 'MNT 0002', status='maintenance', make='Suzuki', model='Ertiga')
+        self.make_vehicle(self.agency_profile, 'UNA 0001', status='unavailable', make='Nissan', model='Almera')
+        self.login_agency()
+        response = self.client.get(reverse('agencyfleet:list'))
+        # The pending chip links to Booking requests, filtered to this car's pending requests.
+        inbox = reverse('agencyrequests:inbox')
+        self.assertContains(response, f'href="{inbox}?status=pending&amp;car={self.vehicle.pk}"')
+        self.assertNotContains(response, f'car={maintenance.pk}')
+        self.assertContains(response, 'Hidden from renters while in maintenance.', count=1)
+        self.assertContains(response, '<p class="listing-note">Hidden from renters.</p>', count=1, html=True)
+        self.assertContains(response, 'No photo yet', count=3)
+        self.assertContains(response, 'Add photos', count=3)
+        self.assertContains(response, 'View listing', count=1)
+
     def test_empty_state(self):
         self.client.force_login(self.other_agency_user)
         self.other_vehicle.delete()
@@ -394,15 +410,31 @@ class DeleteVehicleTests(AgencyFleetTestBase):
                 self.assertIn("Cars with booking history can't be deleted.", messages_text(response))
                 self.assertTrue(Vehicle.objects.filter(pk=self.vehicle.pk).exists())
 
-    def test_delete_button_hidden_when_bookings_exist(self):
+    def test_delete_button_disabled_when_bookings_exist(self):
         self.make_booking(self.vehicle, -9, -8, 'declined')
         self.login_agency()
         response = self.client.get(reverse('agencyfleet:list'))
+        # Shown but disabled, tied to a note that says why. Nothing can post the delete.
+        note_id = f'delete-note-{self.vehicle.pk}'
+        self.assertContains(
+            response,
+            f'<button type="button" class="button-danger-outline button-compact" disabled aria-describedby="{note_id}">Delete</button>',
+            html=True,
+        )
+        self.assertContains(
+            response,
+            f'<p class="listing-delete-note" id="{note_id}">Can\'t delete: this car has booking history. '
+            'Set it to Unavailable to hide it from renters.</p>',
+            html=True,
+        )
         self.assertNotContains(response, reverse('agencyfleet:delete', args=[self.vehicle.pk]))
 
     def test_works_with_no_bookings(self):
         self.login_agency()
-        self.assertContains(self.client.get(reverse('agencyfleet:list')), reverse('agencyfleet:delete', args=[self.vehicle.pk]))
+        page = self.client.get(reverse('agencyfleet:list'))
+        self.assertContains(page, reverse('agencyfleet:delete', args=[self.vehicle.pk]))
+        self.assertContains(page, '<button type="submit" class="button-danger-outline button-compact">Delete</button>', html=True)
+        self.assertNotContains(page, 'listing-delete-note')
         response = self.client.post(reverse('agencyfleet:delete', args=[self.vehicle.pk]))
         self.assertRedirects(response, reverse('agencyfleet:list'), fetch_redirect_response=False)
         self.assertIn('Car deleted.', messages_text(response))
@@ -529,7 +561,7 @@ class PhotoTests(AgencyFleetTestBase):
     def test_list_shows_photo_count_and_image(self):
         self.upload()
         response = self.client.get(reverse('agencyfleet:list'))
-        self.assertContains(response, 'Photos (1)')
+        self.assertContains(response, 'Photos · 1')
         self.assertContains(response, 'class="listing-image"')
 
 

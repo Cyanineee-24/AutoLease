@@ -4,7 +4,6 @@
 {% block title %}My listings | AutoLease{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/fleet/fleet.css' %}">
 <link rel="stylesheet" href="{% static 'css/agencyfleet/agencyfleet.css' %}">
 {% endblock %}
 
@@ -41,48 +40,68 @@
         <ul class="listing-list">
             {% for vehicle in vehicles %}
                 <li class="listing-card">
-                    <div class="listing-media">
-                        {% if vehicle.primary_image %}
-                            <img class="listing-image" src="{{ vehicle.primary_image.image.url }}" alt="{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}" loading="lazy">
-                        {% else %}
-                            <div class="vehicle-card-placeholder tone-{{ vehicle.placeholder_tone }}">
-                                <svg class="placeholder-car-svg" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                    <path d="M5 17h1a2 2 0 0 0 2-2V7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8a2 2 0 0 0 2 2h1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                                    <circle cx="7" cy="17" r="2" stroke="currentColor" stroke-width="1.2"/>
-                                    <circle cx="17" cy="17" r="2" stroke="currentColor" stroke-width="1.2"/>
-                                    <path d="M3 11h2M19 11h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                                </svg>
+                    <div class="listing-top">
+                        <div class="listing-media">
+                            {% if vehicle.primary_image %}
+                                <img class="listing-image" src="{{ vehicle.primary_image.image.url }}" alt="{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}" loading="lazy">
+                            {% else %}
+                                <div class="listing-no-photo">No photo yet</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="listing-body">
+                            <div class="listing-title-row">
+                                <h2 class="listing-title">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h2>
+                                <span class="listing-status listing-status--{{ vehicle.status }}">{{ vehicle.get_status_display }}</span>
                             </div>
-                        {% endif %}
+                            <p class="listing-meta">
+                                <span class="listing-plate">{{ vehicle.plate_number }}</span>
+                                <span>{{ vehicle.city }}</span>
+                                <span aria-hidden="true">·</span>
+                                <span class="listing-price"><strong>₱{{ vehicle.daily_rate|floatformat:"-2g" }}</strong> per day</span>
+                            </p>
+                            {% if vehicle.upcoming_count or vehicle.pending_count %}
+                                <p class="listing-chips">
+                                    {% if vehicle.upcoming_count %}<span class="listing-chip">{{ vehicle.upcoming_count }} upcoming trip{{ vehicle.upcoming_count|pluralize }}</span>{% endif %}
+                                    {% if vehicle.pending_count %}<a class="listing-chip listing-chip--pending" href="{% url 'agencyrequests:inbox' %}?status=pending&amp;car={{ vehicle.pk }}">{{ vehicle.pending_count }} pending request{{ vehicle.pending_count|pluralize }}</a>{% endif %}
+                                </p>
+                            {% endif %}
+                            {% if vehicle.status == 'maintenance' %}
+                                <p class="listing-note">Hidden from renters while in maintenance.</p>
+                            {% elif vehicle.status == 'unavailable' %}
+                                <p class="listing-note">Hidden from renters.</p>
+                            {% endif %}
+                        </div>
                     </div>
 
-                    <div class="listing-body">
-                        <div class="listing-title-row">
-                            <h2 class="listing-title">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h2>
-                            <span class="listing-status listing-status--{{ vehicle.status }}">{{ vehicle.get_status_display }}</span>
+                    <div class="listing-actions">
+                        <div class="listing-actions-group">
+                            <a class="button-outline button-compact" href="{% url 'agencyfleet:edit' vehicle.pk %}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M13.5 6.5l4 4" stroke="currentColor" stroke-width="1.8"/></svg>
+                                Edit details
+                            </a>
+                            {% with photo_count=vehicle.images.all|length %}
+                            <a class="button-outline button-compact" href="{% url 'agencyfleet:photos' vehicle.pk %}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="10" r="1.5" stroke="currentColor" stroke-width="1.8"/><path d="M21 16l-5-5-8 8" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                                {% if photo_count %}Photos · {{ photo_count }}{% else %}Add photos{% endif %}
+                            </a>
+                            {% endwith %}
+                            {% if vehicle.status == 'available' %}
+                                <a class="button-outline button-compact listing-view-button" href="{% url 'fleet:vehicle_detail' vehicle.pk %}">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    View listing
+                                </a>
+                            {% endif %}
                         </div>
-                        <p class="listing-meta">
-                            <span class="listing-plate">{{ vehicle.plate_number }}</span>
-                            {{ vehicle.city }}
-                        </p>
-                        <p class="listing-price"><strong>₱{{ vehicle.daily_rate|floatformat:"-2g" }}</strong> per day</p>
-                        {% if vehicle.upcoming_count or vehicle.pending_count %}
-                            <p class="listing-activity">
-                                {% if vehicle.upcoming_count %}<span>{{ vehicle.upcoming_count }} upcoming trip{{ vehicle.upcoming_count|pluralize }}</span>{% endif %}
-                                {% if vehicle.pending_count %}<span>{{ vehicle.pending_count }} pending request{{ vehicle.pending_count|pluralize }}</span>{% endif %}
-                            </p>
-                        {% endif %}
 
-                        <div class="listing-actions">
-                            <a class="button-outline button-compact" href="{% url 'agencyfleet:edit' vehicle.pk %}">Edit</a>
-                            <a class="button-outline button-compact" href="{% url 'agencyfleet:photos' vehicle.pk %}">Photos ({{ vehicle.images.all|length }})</a>
+                        <div class="listing-actions-group">
                             <form method="post" action="{% url 'agencyfleet:status' vehicle.pk %}" class="listing-status-form"
                                   data-confirm-when="status:unavailable,maintenance"
                                   data-confirm-title="Take this car off the browse page?"
                                   data-confirm="Renters won't be able to find or book it until you set it back to Available."
                                   data-confirm-action="Change status">
                                 {% csrf_token %}
-                                <label for="status-{{ vehicle.pk }}" class="sr-only">Status for {{ vehicle.make }} {{ vehicle.model }}</label>
+                                <label for="status-{{ vehicle.pk }}" class="listing-status-label">Status<span class="sr-only"> for {{ vehicle.make }} {{ vehicle.model }}</span></label>
                                 <select id="status-{{ vehicle.pk }}" name="status" class="listing-status-select">
                                     {% for value, label in status_choices %}
                                         <option value="{{ value }}"{% if value == vehicle.status %} selected{% endif %}>{{ label }}</option>
@@ -90,17 +109,20 @@
                                 </select>
                                 <button type="submit" class="button-outline button-compact">Update</button>
                             </form>
-                            {% if vehicle.status == 'available' %}
-                                <a class="listing-link" href="{% url 'fleet:vehicle_detail' vehicle.pk %}">View listing</a>
-                            {% endif %}
-                            {% if not vehicle.booking_count %}
+                            {% if vehicle.booking_count %}
+                                {# No form here: the server refuses this delete anyway, so there is nothing to post. #}
+                                <button type="button" class="button-danger-outline button-compact" disabled aria-describedby="delete-note-{{ vehicle.pk }}">Delete</button>
+                            {% else %}
                                 <form method="post" action="{% url 'agencyfleet:delete' vehicle.pk %}" class="listing-delete-form" data-confirm-title="Delete this car?" data-confirm-action="Delete car" data-confirm-danger data-confirm="Delete the {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}? This can't be undone.">
                                     {% csrf_token %}
-                                    <button type="submit" class="listing-delete-button">Delete</button>
+                                    <button type="submit" class="button-danger-outline button-compact">Delete</button>
                                 </form>
                             {% endif %}
                         </div>
                     </div>
+                    {% if vehicle.booking_count %}
+                        <p class="listing-delete-note" id="delete-note-{{ vehicle.pk }}">Can't delete: this car has booking history. Set it to Unavailable to hide it from renters.</p>
+                    {% endif %}
                 </li>
             {% endfor %}
         </ul>

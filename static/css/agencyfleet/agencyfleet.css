@@ -8,44 +8,78 @@
 .listings-empty p { margin: 0 0 16px; }
 
 .listing-list { display: grid; gap: 16px; list-style: none; margin: 0; padding: 0; }
+
+/* One card per car: details on top, then an action bar. */
 .listing-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 16px;
     box-shadow: var(--shadow-card);
-    display: grid;
-    gap: 20px;
-    grid-template-columns: 200px 1fr;
-    padding: 16px;
+    overflow: hidden;
 }
 
-.listing-media { aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; }
+.listing-top { display: flex; flex-wrap: wrap; gap: 16px 20px; padding: 16px; }
+.listing-media { aspect-ratio: 4 / 3; border-radius: 12px; flex: 0 0 200px; overflow: hidden; }
 .listing-image { display: block; height: 100%; object-fit: cover; width: 100%; }
+.listing-no-photo {
+    align-items: center;
+    background: #FAFAFA;
+    border: 2px dashed #B0B0B0;
+    border-radius: 12px;
+    color: var(--color-muted);
+    display: flex;
+    font-size: 0.9rem;
+    font-weight: 600;
+    height: 100%;
+    justify-content: center;
+}
 
-.listing-body { display: flex; flex-direction: column; min-width: 0; }
-.listing-body p { margin: 4px 0 0; }
+.listing-body { display: flex; flex: 1 1 260px; flex-direction: column; gap: 8px; min-width: 0; }
+.listing-body p { margin: 0; }
 .listing-title-row { align-items: flex-start; display: flex; gap: 12px; justify-content: space-between; }
-.listing-title { font-size: 1.15rem; margin: 0; overflow-wrap: anywhere; }
-.listing-meta { color: var(--color-muted); font-size: 0.9rem; }
-.listing-plate { background: #F2F2F2; border-radius: 6px; color: #444444; font-size: 0.75rem; font-weight: 600; margin-right: 8px; padding: 2px 8px; }
-.listing-price { font-size: 0.95rem; }
-.listing-activity { display: flex; flex-wrap: wrap; font-size: 0.85rem; gap: 6px 16px; }
-.listing-activity span { color: var(--color-primary-dark); font-weight: 600; }
+.listing-title { font-size: 1.2rem; margin: 0; overflow-wrap: anywhere; }
+.listing-meta { align-items: center; color: var(--color-muted); display: flex; flex-wrap: wrap; font-size: 0.9rem; gap: 4px 8px; }
+.listing-plate { background: #F2F2F2; border-radius: 6px; color: #444444; font-size: 0.75rem; font-weight: 600; padding: 2px 8px; }
+.listing-price strong { color: var(--color-text); }
+.listing-note { color: var(--color-muted); font-size: 0.85rem; }
+
+.listing-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.listing-chip {
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    color: var(--color-text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 4px 12px;
+}
+.listing-chip--pending { background: #FFF8E6; border-color: #F0C36D; color: #6B4700; position: relative; }
+.listing-chip--pending:hover { text-decoration: underline; }
+.listing-chip--pending:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+/* The chip stays small, but its tap area is 44px tall. */
+.listing-chip--pending::after { bottom: -8px; content: ''; left: 0; position: absolute; right: 0; top: -8px; }
 
 .listing-status { border-radius: 999px; flex-shrink: 0; font-size: 0.75rem; font-weight: 600; padding: 3px 10px; }
 .listing-status--available { background: #E8F5E9; color: #1B5E20; }
 .listing-status--unavailable { background: #EEEEEE; color: #555555; }
 .listing-status--maintenance { background: #FFF4E5; color: #8A4B00; }
 
-.listing-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 10px 14px; margin-top: auto; padding-top: 14px; }
-.listing-link { color: var(--color-text); font-size: 0.9rem; font-weight: 600; text-decoration: underline; }
-.listing-link:hover { color: var(--color-primary); }
-.listing-delete-form { margin-left: auto; }
-.listing-delete-button { background: none; border: 0; color: #B00020; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 600; padding: 0; text-decoration: underline; }
-.listing-delete-button:hover { color: #7F0017; }
+.listing-actions {
+    align-items: center;
+    background: #FCFCFC;
+    border-top: 1px solid #EBEBEB;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    justify-content: space-between;
+    padding: 12px 16px;
+}
+.listing-actions-group { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+.listing-view-button { border-color: var(--color-border); }
+.listing-delete-note { background: #FCFCFC; color: var(--color-muted); font-size: 0.85rem; margin: 0; padding: 0 16px 12px; }
 
-.listing-status-form { align-items: center; display: inline-flex; gap: 6px; }
-.listing-status-select { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; font: inherit; font-size: 0.85rem; padding: 6px 8px; }
+.listing-status-form { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+.listing-status-label { font-size: 0.85rem; font-weight: 600; }
+.listing-status-select { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; font: inherit; font-size: 0.85rem; min-height: 44px; padding: 6px 8px; }
 .listing-status-select:focus { border-color: var(--color-primary); outline: 2px solid rgba(230, 30, 77, 0.18); }
 .alert-link { color: inherit; font-weight: 700; margin-left: 4px; text-decoration: underline; white-space: nowrap; }
 .sr-only { border: 0; clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; width: 1px; }
@@ -72,12 +106,17 @@
 .vehicle-form .has-error input,
 .vehicle-form .has-error select { border-color: #B00020; }
 .form-hint { color: var(--color-muted); font-size: 0.8rem; }
+.listing-link { color: var(--color-text); font-size: 0.9rem; font-weight: 600; text-decoration: underline; }
+.listing-link:hover { color: var(--color-primary); }
 .vehicle-form-actions { align-items: center; display: flex; gap: 20px; justify-content: flex-end; margin-top: 28px; }
 
 /* ---- Photos ---- */
 .photo-upload-form { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; margin-bottom: 24px; padding: 20px; }
 .photo-upload-form .form-field { flex: 1 1 280px; }
 .photo-upload-form input[type="file"] { border: 1px solid var(--color-border); border-radius: 8px; font: inherit; padding: 10px; width: 100%; }
+.photo-tile-actions .listing-delete-form { margin-left: auto; }
+.listing-delete-button { background: none; border: 0; color: #B00020; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 600; padding: 0; text-decoration: underline; }
+.listing-delete-button:hover { color: #7F0017; }
 .photo-limit-note { margin-bottom: 24px; }
 .photo-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); list-style: none; margin: 0; padding: 0; }
 .photo-tile { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; box-shadow: var(--shadow-card); overflow: hidden; }
@@ -87,7 +126,7 @@
 .photo-tile-actions { align-items: center; display: flex; gap: 10px; min-height: 52px; padding: 10px 12px; }
 
 @media (max-width: 640px) {
-    .listing-card { grid-template-columns: 1fr; }
+    .listing-media { flex-basis: 100%; }
     .vehicle-form-card { padding: 24px 20px; }
     .vehicle-form-grid { grid-template-columns: 1fr; }
 }
