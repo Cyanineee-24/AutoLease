@@ -175,27 +175,62 @@ def _owned_image(vehicle, image_pk):
     return get_object_or_404(VehicleImage, pk=image_pk, vehicle=vehicle)
 
 
+def _save_photos(vehicle, uploads, as_main):
+    """Create the VehicleImage rows for one upload, all or nothing."""
+    with transaction.atomic():
+        current = vehicle.images.aggregate(max_order=Max('sort_order'))['max_order']
+        next_order = 0 if current is None else current + 1
+        if as_main:
+            vehicle.images.update(is_primary=False)
+            first_is_primary = True
+        else:
+            # A car with no main photo yet gets the first uploaded file as its main photo.
+            first_is_primary = not vehicle.images.filter(is_primary=True).exists()
+        for offset, upload in enumerate(uploads):
+            VehicleImage.objects.create(
+                vehicle=vehicle,
+                image=upload,
+                sort_order=next_order + offset,
+                is_primary=first_is_primary and offset == 0,
+            )
+
+
 @login_required
 @agency_required
 def photos(request, pk):
     vehicle = _owned_vehicle(request, pk)
     form = VehiclePhotoForm()
+    # 'main' replaces the main photo; anything else adds to the gallery.
+    target = 'main' if request.POST.get('target') == 'main' else 'gallery'
 
     if request.method == 'POST':
-        if vehicle.images.count() >= MAX_PHOTOS_PER_CAR:
-            messages.error(request, f'A car can have up to {MAX_PHOTOS_PER_CAR} photos. Delete one to add another.')
+        remaining = MAX_PHOTOS_PER_CAR - vehicle.images.count()
+        selected = len(request.FILES.getlist('image'))
+        # Count checks come first, so an oversized batch is refused before any file is read.
+        problem = None
+        if remaining <= 0:
+            problem = f'A car can have up to {MAX_PHOTOS_PER_CAR} photos. Delete one to add another.'
+        elif target == 'main' and selected > 1:
+            problem = 'Choose just one photo for the main photo.'
+        elif selected > remaining:
+            problem = (
+                f'You can add {remaining} more photo{"s" if remaining != 1 else ""} to this car. '
+                f'You selected {selected}.'
+            )
+        if problem:
+            messages.error(request, problem)
             return redirect('agencyfleet:photos', pk=vehicle.pk)
+
         form = VehiclePhotoForm(request.POST, request.FILES)
         if form.is_valid():
-            with transaction.atomic():
-                current = vehicle.images.aggregate(max_order=Max('sort_order'))['max_order']
-                VehicleImage.objects.create(
-                    vehicle=vehicle,
-                    image=form.cleaned_data['image'],
-                    sort_order=0 if current is None else current + 1,
-                    is_primary=not vehicle.images.filter(is_primary=True).exists(),
-                )
-            messages.success(request, 'Photo added.')
+            uploads = form.cleaned_data['image']
+            _save_photos(vehicle, uploads, as_main=target == 'main')
+            if target == 'main':
+                messages.success(request, 'Main photo updated.')
+            elif len(uploads) == 1:
+                messages.success(request, 'Photo added.')
+            else:
+                messages.success(request, f'{len(uploads)} photos added.')
             return redirect('agencyfleet:photos', pk=vehicle.pk)
 
     images = vehicle.gallery_images
@@ -203,9 +238,13 @@ def photos(request, pk):
         'vehicle': vehicle,
         'images': images,
         # The photo renters see first (gallery order), even if none is flagged.
-        'main_image_id': images[0].pk if images else None,
+        'main_image': images[0] if images else None,
+        'extra_images': images[1:],
         'form': form,
+        # Which upload form the bound form's errors belong to.
+        'upload_target': target,
         'can_upload': len(images) < MAX_PHOTOS_PER_CAR,
+        'remaining': MAX_PHOTOS_PER_CAR - len(images),
         'max_photos': MAX_PHOTOS_PER_CAR,
     }
     return render(request, 'agencyfleet/photos.html', context)

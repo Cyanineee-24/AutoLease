@@ -565,6 +565,159 @@ class PhotoTests(AgencyFleetTestBase):
         self.assertContains(response, 'class="listing-image"')
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class MultiPhotoUploadTests(AgencyFleetTestBase):
+    """Several photos per upload, and the separate "main photo" upload."""
+
+    def setUp(self):
+        self.login_agency()
+        self.photos_url = reverse('agencyfleet:photos', args=[self.vehicle.pk])
+
+    def upload(self, uploads, target=None, vehicle=None):
+        url = reverse('agencyfleet:photos', args=[vehicle.pk]) if vehicle else self.photos_url
+        data = {'image': uploads}
+        if target is not None:
+            data['target'] = target
+        return self.client.post(url, data)
+
+    def add_rows(self, count):
+        """Existing photos, without going through an upload each time."""
+        for index in range(count):
+            VehicleImage.objects.create(
+                vehicle=self.vehicle, image=f'fleet/vehicles/existing-{index}.png',
+                sort_order=index, is_primary=index == 0,
+            )
+
+    def images(self):
+        return list(VehicleImage.objects.filter(vehicle=self.vehicle).order_by('sort_order', 'id'))
+
+    def basenames(self):
+        return [image.image.name.rsplit('/', 1)[-1] for image in self.images()]
+
+    def test_multiple_files_saved_in_selected_order(self):
+        response = self.upload([png_upload('first.png'), png_upload('second.png'), png_upload('third.png')])
+        self.assertRedirects(response, self.photos_url, fetch_redirect_response=False)
+        self.assertIn('3 photos added.', messages_text(response))
+        names = self.basenames()
+        self.assertEqual(len(names), 3)
+        for name, expected in zip(names, ('first', 'second', 'third')):
+            self.assertTrue(name.startswith(expected), name)
+        self.assertEqual([image.sort_order for image in self.images()], [0, 1, 2])
+        # The car had no main photo, so the first file becomes it.
+        self.assertEqual([image.is_primary for image in self.images()], [True, False, False])
+
+    def test_batch_keeps_existing_primary_and_continues_sort_order(self):
+        self.add_rows(2)
+        response = self.upload([png_upload('fourth.png'), png_upload('fifth.png')])
+        self.assertIn('2 photos added.', messages_text(response))
+        self.assertEqual([image.sort_order for image in self.images()], [0, 1, 2, 3])
+        self.assertEqual([image.is_primary for image in self.images()], [True, False, False, False])
+
+    def test_single_file_message(self):
+        response = self.upload([png_upload()], target='gallery')
+        self.assertIn('Photo added.', messages_text(response))
+
+    def test_over_limit_batch_saves_nothing(self):
+        self.add_rows(8)
+        response = self.upload([png_upload('a.png'), png_upload('b.png'), png_upload('c.png')])
+        self.assertRedirects(response, self.photos_url, fetch_redirect_response=False)
+        self.assertIn('You can add 2 more photos to this car. You selected 3.', messages_text(response))
+        self.assertEqual(VehicleImage.objects.filter(vehicle=self.vehicle).count(), 8)
+
+        VehicleImage.objects.create(vehicle=self.vehicle, image='fleet/vehicles/existing-8.png', sort_order=8)
+        response = self.upload([png_upload('a.png'), png_upload('b.png')])
+        self.assertIn('You can add 1 more photo to this car. You selected 2.', messages_text(response))
+        self.assertEqual(VehicleImage.objects.filter(vehicle=self.vehicle).count(), 9)
+
+    def test_batch_that_exactly_fills_the_limit_is_accepted(self):
+        self.add_rows(8)
+        self.upload([png_upload('a.png'), png_upload('b.png')])
+        self.assertEqual(VehicleImage.objects.filter(vehicle=self.vehicle).count(), 10)
+
+    def test_one_invalid_file_saves_nothing_and_is_named(self):
+        broken = SimpleUploadedFile('broken.png', b'definitely not an image', content_type='image/png')
+        response = self.upload([png_upload('good.png'), broken, png_upload('fine.png')])
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "broken.png: That file isn&#x27;t an image we can read.")
+        self.assertEqual(len(response.context['form'].errors['image']), 1)
+        self.assertFalse(VehicleImage.objects.filter(vehicle=self.vehicle).exists())
+
+    def test_wrong_type_and_oversize_in_a_batch_are_named(self):
+        for upload, message in (
+            (png_upload('animated.gif'), 'animated.gif: Use a JPG, PNG or WebP image.'),
+            (png_upload('huge.png', padding=5 * 1024 * 1024), 'huge.png: Photos must be 5 MB or smaller.'),
+        ):
+            with self.subTest(message=message):
+                response = self.upload([png_upload('good.png'), upload])
+                self.assertContains(response, message)
+        self.assertFalse(VehicleImage.objects.filter(vehicle=self.vehicle).exists())
+
+    def test_main_target_swaps_primary_and_keeps_old_photo(self):
+        self.add_rows(2)
+        old_primary = VehicleImage.objects.get(vehicle=self.vehicle, is_primary=True)
+        response = self.upload([png_upload('hero.png')], target='main')
+        self.assertRedirects(response, self.photos_url, fetch_redirect_response=False)
+        self.assertIn('Main photo updated.', messages_text(response))
+
+        primaries = VehicleImage.objects.filter(vehicle=self.vehicle, is_primary=True)
+        self.assertEqual(primaries.count(), 1)
+        self.assertTrue(primaries.get().image.name.rsplit('/', 1)[-1].startswith('hero'))
+        # The old main photo stays in the gallery as a normal photo.
+        old_primary.refresh_from_db()
+        self.assertFalse(old_primary.is_primary)
+        self.assertEqual(VehicleImage.objects.filter(vehicle=self.vehicle).count(), 3)
+
+        page = self.client.get(self.photos_url)
+        self.assertEqual(page.context['main_image'], primaries.get())
+        self.assertIn(old_primary, page.context['extra_images'])
+
+    def test_main_target_with_two_files_refused(self):
+        self.add_rows(1)
+        response = self.upload([png_upload('a.png'), png_upload('b.png')], target='main')
+        self.assertRedirects(response, self.photos_url, fetch_redirect_response=False)
+        self.assertIn('Choose just one photo for the main photo.', messages_text(response))
+        self.assertEqual(VehicleImage.objects.filter(vehicle=self.vehicle).count(), 1)
+        self.assertTrue(VehicleImage.objects.get(vehicle=self.vehicle).is_primary)
+
+    def test_main_target_counts_toward_the_limit(self):
+        self.add_rows(10)
+        response = self.upload([png_upload('hero.png')], target='main')
+        self.assertIn('up to 10 photos', messages_text(response))
+        self.assertEqual(VehicleImage.objects.filter(vehicle=self.vehicle).count(), 10)
+
+    def test_unknown_target_is_treated_as_gallery(self):
+        self.add_rows(1)
+        response = self.upload([png_upload('extra.png')], target='banana')
+        self.assertIn('Photo added.', messages_text(response))
+        self.assertEqual([image.is_primary for image in self.images()], [True, False])
+
+    def test_other_agency_car_is_still_404(self):
+        for target in ('gallery', 'main'):
+            with self.subTest(target=target):
+                response = self.upload([png_upload('a.png'), png_upload('b.png')], target=target, vehicle=self.other_vehicle)
+                self.assertEqual(response.status_code, 404)
+        self.assertFalse(VehicleImage.objects.filter(vehicle=self.other_vehicle).exists())
+
+    def test_page_shows_main_and_more_photos(self):
+        response = self.client.get(self.photos_url)
+        self.assertContains(response, 'No main photo yet')
+        self.assertContains(response, 'Add a main photo')
+        self.assertContains(response, 'No extra photos yet.')
+        self.assertContains(response, '0 added, room for 10 more.')
+        self.assertContains(response, '<input type="hidden" name="target" value="gallery">', html=True)
+        self.assertContains(response, '<input type="hidden" name="target" value="main">', html=True)
+
+        self.add_rows(3)
+        response = self.client.get(self.photos_url)
+        self.assertContains(response, '3 of 10 photos')
+        self.assertContains(response, '2 added, room for 7 more.')
+        self.assertContains(response, 'Replace main photo')
+        self.assertContains(response, 'Make main', count=3)  # two buttons + the hint
+        self.assertContains(response, 'aria-label="Delete photo 2"')
+        self.assertContains(response, 'aria-label="Delete photo 3"')
+        self.assertNotContains(response, 'No extra photos yet.')
+
+
 class NavigationTests(AgencyFleetTestBase):
     def test_agency_sees_my_listings_not_become_a_host(self):
         self.login_agency()

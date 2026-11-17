@@ -96,21 +96,49 @@ MAX_PHOTO_BYTES = 5 * 1024 * 1024
 PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
 
 
-class VehiclePhotoForm(forms.Form):
-    """One photo per submit. ImageField makes Pillow confirm it's a real image."""
+class MultipleFileInput(forms.FileInput):
+    """A file input that accepts several files (Django's documented pattern)."""
 
-    image = forms.ImageField(
-        label='Add a photo',
+    allow_multiple_selected = True
+
+
+class MultipleImageField(forms.ImageField):
+    """Cleans one upload or a list of them and always returns a list.
+
+    Every file gets the full ImageField checks (Pillow confirms it's a real
+    image), the extension validator and the size limit. An error names the
+    file it belongs to, e.g. "beach.gif: Use a JPG, PNG or WebP image."
+    """
+
+    widget = MultipleFileInput
+
+    def clean(self, data, initial=None):
+        uploads = data if isinstance(data, (list, tuple)) else [data]
+        uploads = [upload for upload in uploads if upload]
+        if not uploads:
+            raise forms.ValidationError(self.error_messages['required'], code='required')
+
+        check_one = super().clean
+        cleaned = []
+        for upload in uploads:
+            try:
+                image = check_one(upload, initial)
+                if image.size > MAX_PHOTO_BYTES:
+                    raise forms.ValidationError('Photos must be 5 MB or smaller.')
+            except forms.ValidationError as error:
+                raise forms.ValidationError(f'{upload.name}: {error.messages[0]}') from error
+            cleaned.append(image)
+        return cleaned
+
+
+class VehiclePhotoForm(forms.Form):
+    """One or more photos per submit; cleaned_data['image'] is a list, in the order chosen."""
+
+    image = MultipleImageField(
+        label='Add photos',
         validators=[FileExtensionValidator(PHOTO_EXTENSIONS, message='Use a JPG, PNG or WebP image.')],
-        widget=forms.FileInput(attrs={'accept': '.jpg,.jpeg,.png,.webp'}),
         error_messages={
             'required': 'Choose a photo to upload.',
             'invalid_image': "That file isn't an image we can read. Use a JPG, PNG or WebP photo.",
         },
     )
-
-    def clean_image(self):
-        image = self.cleaned_data['image']
-        if image.size > MAX_PHOTO_BYTES:
-            raise forms.ValidationError('Photos must be 5 MB or smaller.')
-        return image

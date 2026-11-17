@@ -111,19 +111,87 @@
 .vehicle-form-actions { align-items: center; display: flex; gap: 20px; justify-content: flex-end; margin-top: 28px; }
 
 /* ---- Photos ---- */
-.photo-upload-form { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; margin-bottom: 24px; padding: 20px; }
-.photo-upload-form .form-field { flex: 1 1 280px; }
-.photo-upload-form input[type="file"] { border: 1px solid var(--color-border); border-radius: 8px; font: inherit; padding: 10px; width: 100%; }
-.photo-tile-actions .listing-delete-form { margin-left: auto; }
-.listing-delete-button { background: none; border: 0; color: #B00020; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 600; padding: 0; text-decoration: underline; }
-.listing-delete-button:hover { color: #7F0017; }
-.photo-limit-note { margin-bottom: 24px; }
-.photo-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); list-style: none; margin: 0; padding: 0; }
-.photo-tile { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; box-shadow: var(--shadow-card); overflow: hidden; }
-.photo-tile-media { aspect-ratio: 4 / 3; position: relative; }
+.photos-toprow { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin-bottom: 20px; }
+.photos-heading { margin-bottom: 24px; }
+.photos-heading h1 { font-size: 2rem; margin: 0; overflow-wrap: anywhere; }
+
+/* Two cards side by side; they stack when there isn't room for both. */
+.photos-layout { align-items: flex-start; display: flex; flex-wrap: wrap; gap: 24px; }
+.photos-card { min-width: 0; padding: 24px; }
+.photos-card h2 { font-size: 1.25rem; margin: 0 0 4px; }
+.photos-card--more { flex: 1 1 520px; }
+.photos-card--main { flex: 1 1 320px; max-width: 420px; }
+.photos-card-copy { font-size: 0.9rem; }
+/* Two classes, to win over the shared `.card p` margin reset. */
+.photos-card .photos-empty { font-size: 0.9rem; margin-top: 20px; }
+.photo-limit-note { margin-top: 16px; }
+.photo-limit-note p { margin: 0; }
+
+/* Main photo */
+.photo-main-media { aspect-ratio: 4 / 3; border-radius: 12px; margin-top: 16px; overflow: hidden; }
+.photo-main-media img { display: block; height: 100%; object-fit: cover; width: 100%; }
+.photo-main-empty {
+    align-items: center;
+    aspect-ratio: 4 / 3;
+    background: #FAFAFA;
+    border: 2px dashed #B0B0B0;
+    border-radius: 12px;
+    color: var(--color-muted);
+    display: flex;
+    font-size: 0.9rem;
+    font-weight: 600;
+    justify-content: center;
+    margin-top: 16px;
+}
+.photo-main-form { display: grid; gap: 12px; justify-items: start; margin-top: 16px; }
+.photo-main-form .form-field { justify-self: stretch; }
+.photo-main-form input[type="file"] { padding: 10px; width: 100%; }
+.photo-main-actions { margin-top: 12px; }
+.photos-card--main .form-hint { display: block; margin-top: 16px; }
+
+/* Drop zone: a label around the file input, so a click or the keyboard opens the picker. */
+.photo-drop-form { display: grid; gap: 12px; justify-items: start; margin-top: 16px; }
+.photo-dropzone {
+    align-items: center;
+    background: #FAFAFA;
+    border: 2px dashed #B0B0B0;
+    border-radius: 12px;
+    color: var(--color-text);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-self: stretch;
+    padding: 28px 16px;
+    text-align: center;
+    transition: background-color 150ms ease, border-color 150ms ease;
+}
+.photo-dropzone:hover,
+.photo-dropzone.is-dragover { background: var(--color-background); border-color: var(--color-text); }
+.photo-dropzone:focus-within { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.photo-dropzone svg { color: var(--color-muted); }
+.photo-dropzone-title strong { text-decoration: underline; }
+.photo-dropzone-hint { color: var(--color-muted); font-size: 0.8rem; }
+.photo-dropzone-input { max-width: 100%; min-width: 0; }
+/* With JavaScript, photos.js lists the chosen files, so the input itself is hidden
+   from view. It stays in the page and focusable (never display: none). */
+.photo-dropzone.is-enhanced .photo-dropzone-input { border: 0; clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; width: 1px; }
+.photo-selection { font-size: 0.85rem; overflow-wrap: anywhere; }
+.photo-selection strong { color: var(--color-text); }
+.photo-selection.is-warning { color: var(--color-danger); }
+
+/* Other photos */
+.photo-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); list-style: none; margin: 20px 0 0; padding: 0; }
+.photo-tile { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; }
+.photo-tile-media { aspect-ratio: 4 / 3; }
 .photo-tile-media img { display: block; height: 100%; object-fit: cover; width: 100%; }
-.photo-main-badge { background: var(--color-surface); border-radius: 999px; box-shadow: var(--shadow-card); font-size: 0.75rem; font-weight: 700; left: 10px; padding: 4px 10px; position: absolute; top: 10px; }
-.photo-tile-actions { align-items: center; display: flex; gap: 10px; min-height: 52px; padding: 10px 12px; }
+.photo-tile-actions { align-items: center; display: flex; gap: 8px; justify-content: space-between; padding: 10px; }
+.photo-delete-icon { padding: 0; width: 44px; }
+
+@media (max-width: 912px) {
+    /* Stacked: the main photo comes first. */
+    .photos-card--main { max-width: none; order: -1; }
+}
 
 @media (max-width: 640px) {
     .listing-media { flex-basis: 100%; }
