@@ -602,6 +602,11 @@ h1, h2, h3 { letter-spacing: -0.03em; line-height: 1.12; }
     display: none !important;
 }
 
+/* The hidden attribute must win over any display set by a class (e.g. buttons). */
+[hidden] {
+    display: none !important;
+}
+
 
 /* ----------------------------------------------------------------
    Responsive

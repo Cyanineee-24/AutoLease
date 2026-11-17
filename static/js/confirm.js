@@ -9,7 +9,11 @@
  *   data-confirm-danger  present: the confirm button is red (.button-danger)
  *   data-confirm-when    "field:value1,value2": only confirm when that field holds
  *                        one of the values AND differs from the value the page
- *                        loaded with
+ *                        loaded with (form only)
+ *
+ * The same attributes on a submit button win over the form's: when the clicked
+ * button has data-confirm, its whole set is used. That lets two buttons in one
+ * form (Approve / Decline) ask different questions, or one of them ask nothing.
  *
  * Without JavaScript every form submits normally. Without <dialog> support the
  * browser's own confirm() is used instead.
@@ -51,9 +55,22 @@
         return field.defaultValue;
     }
 
-    function needsConfirm(form) {
-        if (!form.hasAttribute('data-confirm')) {
+    // Where the confirmation settings come from: the clicked button if it has
+    // its own, else the form. Null when neither asks for a confirmation.
+    function confirmSource(form, submitter) {
+        if (submitter && submitter.hasAttribute('data-confirm')) {
+            return submitter;
+        }
+        return form.hasAttribute('data-confirm') ? form : null;
+    }
+
+    function needsConfirm(form, submitter) {
+        var source = confirmSource(form, submitter);
+        if (!source) {
             return false;
+        }
+        if (source !== form) {
+            return true;
         }
         var when = form.getAttribute('data-confirm-when');
         if (!when) {
@@ -109,7 +126,8 @@
     }
 
     function ask(form, submitter) {
-        var text = form.getAttribute('data-confirm') || '';
+        var source = confirmSource(form, submitter);
+        var text = source.getAttribute('data-confirm') || '';
         if (!hasDialog) {
             if (window.confirm(text)) {
                 // Still inside the submit event here, where browsers ignore a
@@ -119,12 +137,12 @@
             return;
         }
         pending = { form: form, submitter: submitter };
-        titleEl.textContent = form.getAttribute('data-confirm-title') || 'Are you sure?';
+        titleEl.textContent = source.getAttribute('data-confirm-title') || 'Are you sure?';
         textEl.textContent = text;
         textEl.hidden = !text;
-        acceptBtn.textContent = form.getAttribute('data-confirm-action') || 'Confirm';
-        acceptBtn.className = form.hasAttribute('data-confirm-danger') ? 'button-danger' : 'button';
-        dismissBtn.textContent = form.getAttribute('data-confirm-cancel') || 'Go back';
+        acceptBtn.textContent = source.getAttribute('data-confirm-action') || 'Confirm';
+        acceptBtn.className = source.hasAttribute('data-confirm-danger') ? 'button-danger' : 'button';
+        dismissBtn.textContent = source.getAttribute('data-confirm-cancel') || 'Go back';
         dialog.showModal();
         dismissBtn.focus();
     }
@@ -145,7 +163,7 @@
         }
         if (approved.has(form)) {
             approved.delete(form);
-        } else if (needsConfirm(form)) {
+        } else if (needsConfirm(form, event.submitter || null)) {
             event.preventDefault();
             ask(form, event.submitter || null);
             return;

@@ -12,7 +12,7 @@
     <header class="inbox-header">
         <p class="eyebrow">Agency</p>
         <h1>Booking requests</h1>
-        <p class="inbox-subtitle">{{ pending|length }} awaiting your decision · {{ active|length }} upcoming trip{{ active|length|pluralize }}</p>
+        <p class="inbox-subtitle">{{ pending_total }} awaiting your decision · {{ active_total }} upcoming trip{{ active_total|pluralize }}</p>
     </header>
 
     {% if messages %}
@@ -23,121 +23,156 @@
         </div>
     {% endif %}
 
-    <h2 class="inbox-section-title">Pending</h2>
-    {% if not pending %}
+    {# ---- Filters: status chips are links; car and sort are a GET form that works without JS ---- #}
+    <div class="inbox-filters">
+        <div class="filter-chips" role="group" aria-label="Filter by status">
+            {% for filter in status_filters %}
+                <a class="filter-chip" href="{{ filter.url }}"{% if filter.active %} aria-current="true"{% endif %}>{{ filter.label }} · {{ filter.count }}</a>
+            {% endfor %}
+        </div>
+
+        <form method="get" action="{% url 'agencyrequests:inbox' %}" class="filter-form" data-auto-submit>
+            {% if current_status != 'all' %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+            <div class="filter-field">
+                <label for="filter-car">Car</label>
+                <select id="filter-car" name="car">
+                    <option value="">All cars</option>
+                    {% for car in cars %}
+                        <option value="{{ car.pk }}"{% if car.pk == current_car %} selected{% endif %}>{{ car.year }} {{ car.make }} {{ car.model }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="filter-sort">Sort</label>
+                <select id="filter-sort" name="sort">
+                    {% for value, label in sort_choices %}
+                        <option value="{{ value }}"{% if value == current_sort %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="button-outline" data-auto-submit-button>Apply</button>
+        </form>
+    </div>
+
+    {% if not total_count %}
         <div class="inbox-empty">
-            <p>You're all caught up. New requests will show up here.</p>
+            <p>No booking requests yet. They'll show up here when renters ask for your cars.</p>
+        </div>
+    {% elif not bookings %}
+        <div class="inbox-empty">
+            <p>Nothing matches these filters.</p>
+            <a class="inbox-clear" href="{% url 'agencyrequests:inbox' %}">Clear filters</a>
         </div>
     {% else %}
         <ul class="request-list">
-            {% for booking in pending %}
+            {% for booking in bookings %}
                 <li class="request-card">
-                    <div class="request-main">
-                        <div class="request-renter">
-                            <span class="request-avatar">{{ booking.renter_name|make_list|first|upper }}</span>
-                            <div>
+                    <div class="request-body">
+                        <div class="request-head">
+                            <span class="request-avatar" aria-hidden="true">{{ booking.renter_name|make_list|first|upper }}</span>
+                            <div class="request-renter">
                                 <p class="request-renter-name">{{ booking.renter_name }}</p>
                                 {% if booking.renter_contact %}
                                     <p class="request-renter-contact">{{ booking.renter_contact }}</p>
                                 {% endif %}
                             </div>
+                            <span class="status-badge status-badge--{{ booking.status_key }}">{{ booking.status_label }}</span>
                         </div>
 
-                        <p class="request-vehicle">
-                            <a href="{% url 'fleet:vehicle_detail' booking.vehicle.pk %}">{{ booking.vehicle.year }} {{ booking.vehicle.make }} {{ booking.vehicle.model }}</a>
+                        <div class="request-vehicle-row">
+                            <h2 class="request-vehicle">
+                                {% if booking.group == 'pending' %}
+                                    <a href="{% url 'fleet:vehicle_detail' booking.vehicle.pk %}">{{ booking.vehicle.year }} {{ booking.vehicle.make }} {{ booking.vehicle.model }}</a>
+                                {% else %}
+                                    {{ booking.vehicle.year }} {{ booking.vehicle.make }} {{ booking.vehicle.model }}
+                                {% endif %}
+                            </h2>
                             <span class="request-plate">{{ booking.vehicle.plate_number }}</span>
-                        </p>
+                        </div>
+
                         <p class="request-dates">{{ booking.start_date|date:"D, M j" }} – {{ booking.end_date|date:"D, M j, Y" }} · {{ booking.days }} day{{ booking.days|pluralize }}</p>
-                        <p class="request-total">₱{{ booking.daily_rate_snapshot|floatformat:"-2g" }} × {{ booking.days }} = <strong>₱{{ booking.total|floatformat:"-2g" }}</strong></p>
+                        <p class="request-total"><strong>₱{{ booking.total|floatformat:"-2g" }}</strong> <span class="request-total-detail">(₱{{ booking.daily_rate_snapshot|floatformat:"-2g" }} × {{ booking.days }})</span></p>
 
                         {% if booking.renter_message %}
                             <p class="request-message">“{{ booking.renter_message }}”</p>
                         {% endif %}
+
+                        {% if booking.blocking_trip %}
+                            <p class="request-warning" id="clash-{{ booking.pk }}">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 4l9 16H3l9-16z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v4M12 17v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                                <span>{{ booking.clash_text }}</span>
+                            </p>
+                        {% endif %}
+                        {% if booking.overlapping_pending %}
+                            {% with overlap_count=booking.overlapping_pending|length %}
+                            <p class="request-warning">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 4l9 16H3l9-16z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v4M12 17v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                                <span>Overlaps {{ overlap_count }} other pending request{{ overlap_count|pluralize }}. <a href="{% url 'agencyrequests:inbox' %}?status=pending&amp;car={{ booking.vehicle.pk }}">See them</a></span>
+                            </p>
+                            {% endwith %}
+                        {% endif %}
+
                         <p class="request-received">Received {{ booking.created_at|date:"M j, Y, g:i A" }}</p>
                     </div>
 
-                    <form method="post" action="{% url 'agencyrequests:decide' booking.pk %}" class="request-decision">
-                        {% csrf_token %}
-                        <label for="response-{{ booking.pk }}" class="request-response-label">Reply to {{ booking.renter_name }} (optional)</label>
-                        <textarea id="response-{{ booking.pk }}" name="agency_response" rows="3" maxlength="1000" class="request-response-input" placeholder="Pick-up instructions, requirements..."></textarea>
-                        <div class="request-buttons">
-                            <button type="submit" name="action" value="decline" class="button-outline">Decline</button>
-                            <button type="submit" name="action" value="approve" class="button">Approve</button>
-                        </div>
-                    </form>
-                </li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-
-    {% if active %}
-        <h2 class="inbox-section-title">Upcoming trips</h2>
-        <ul class="request-list">
-            {% for booking in active %}
-                <li class="request-card">
-                    <div class="request-main">
-                        <div class="request-renter">
-                            <span class="request-avatar">{{ booking.renter_name|make_list|first|upper }}</span>
-                            <div>
-                                <p class="request-renter-name">{{ booking.renter_name }}</p>
-                                {% if booking.renter_contact %}
-                                    <p class="request-renter-contact">{{ booking.renter_contact }}</p>
+                    {% if booking.group == 'pending' %}
+                        {# Approve and Decline share this form; each button carries its own confirmation. #}
+                        <form method="post" action="{% url 'agencyrequests:decide' booking.pk %}" class="request-actions request-decide">
+                            {% csrf_token %}
+                            <details class="request-reply">
+                                <summary class="request-reply-toggle">Add a reply</summary>
+                                <label for="response-{{ booking.pk }}" class="request-response-label">Reply to {{ booking.renter_name }} (optional)</label>
+                                <textarea id="response-{{ booking.pk }}" name="agency_response" rows="3" maxlength="1000" class="request-response-input" placeholder="Pick-up instructions, requirements..."></textarea>
+                            </details>
+                            <div class="request-buttons">
+                                <button type="submit" name="action" value="decline" class="button-outline" data-confirm-title="Decline this request?" data-confirm="{{ booking.renter_name }} will be told. This can't be undone." data-confirm-action="Decline request" data-confirm-danger>Decline</button>
+                                {% if booking.blocking_trip %}
+                                    <button type="submit" name="action" value="approve" class="button" disabled aria-describedby="clash-{{ booking.pk }}">Approve</button>
+                                {% elif booking.overlapping_pending %}
+                                    {% with overlap_count=booking.overlapping_pending|length %}
+                                    <button type="submit" name="action" value="approve" class="button" data-confirm-title="Approve and decline {{ overlap_count }} other request{{ overlap_count|pluralize }}?" data-confirm="{{ booking.approve_confirm_text }}" data-confirm-action="Approve and decline {{ overlap_count }}">Approve</button>
+                                    {% endwith %}
+                                {% else %}
+                                    <button type="submit" name="action" value="approve" class="button">Approve</button>
                                 {% endif %}
                             </div>
-                        </div>
-
-                        <p class="request-vehicle">
-                            {{ booking.vehicle.year }} {{ booking.vehicle.make }} {{ booking.vehicle.model }}
-                            <span class="request-plate">{{ booking.vehicle.plate_number }}</span>
-                        </p>
-                        <p class="request-dates">{{ booking.start_date|date:"D, M j" }} – {{ booking.end_date|date:"D, M j, Y" }} · {{ booking.days }} day{{ booking.days|pluralize }}</p>
-                        <p class="request-total">₱{{ booking.daily_rate_snapshot|floatformat:"-2g" }} × {{ booking.days }} = <strong>₱{{ booking.total|floatformat:"-2g" }}</strong></p>
-                        <p class="request-trip-status"><span class="status-badge status-badge--{{ booking.status_key }}">{{ booking.status_label }}</span></p>
-                    </div>
-
-                    {% if booking.phase == 'upcoming' %}
-                        <form method="post" action="{% url 'agencyrequests:cancel' booking.pk %}" class="request-decision" data-confirm-title="Cancel this trip?" data-confirm-action="Cancel trip" data-confirm-danger data-confirm="Cancel this trip? The renter will see your reason.">
-                            {% csrf_token %}
-                            <label for="cancel-reason-{{ booking.pk }}" class="request-response-label">Reason for cancelling (the renter will see this)</label>
-                            <textarea id="cancel-reason-{{ booking.pk }}" name="reason" rows="3" maxlength="1000" required class="request-response-input" placeholder="e.g. The car failed its safety inspection."></textarea>
-                            <div class="request-buttons">
-                                <button type="submit" class="button-outline">Cancel trip</button>
-                            </div>
                         </form>
-                    {% else %}
-                        <p class="request-trip-note">Trip in progress. It can't be cancelled.</p>
+                    {% elif booking.group == 'upcoming' %}
+                        {# Opening the reason box is the confirmation, so this form has no data-confirm. #}
+                        <div class="request-actions">
+                            <details class="request-cancel" data-cancel-details>
+                                <summary class="button-outline">Cancel trip</summary>
+                                <form method="post" action="{% url 'agencyrequests:cancel' booking.pk %}" class="request-cancel-form">
+                                    {% csrf_token %}
+                                    <label for="cancel-reason-{{ booking.pk }}" class="request-response-label">Why are you cancelling? <span class="request-label-note">{{ booking.renter_name }} will see this.</span></label>
+                                    <textarea id="cancel-reason-{{ booking.pk }}" name="reason" rows="3" maxlength="1000" required class="request-response-input" placeholder="e.g. The car failed its safety inspection."></textarea>
+                                    <div class="request-buttons">
+                                        <button type="button" class="button-outline" data-keep-trip hidden>Keep trip</button>
+                                        <button type="submit" class="button-danger">Confirm cancellation</button>
+                                    </div>
+                                </form>
+                            </details>
+                        </div>
+                    {% elif booking.group == 'in_progress' %}
+                        <div class="request-actions">
+                            <p class="request-trip-note">Trip in progress. It can't be cancelled.</p>
+                        </div>
+                    {% elif booking.cancel_reason %}
+                        <div class="request-actions">
+                            <p class="request-trip-note">Your reason: “{{ booking.cancel_reason }}”</p>
+                        </div>
+                    {% elif booking.agency_response %}
+                        <div class="request-actions">
+                            <p class="request-trip-note">Your reply: “{{ booking.agency_response }}”</p>
+                        </div>
                     {% endif %}
                 </li>
             {% endfor %}
         </ul>
     {% endif %}
-
-    {% if history %}
-        <h2 class="inbox-section-title">History</h2>
-        <div class="history-table-wrap">
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th scope="col">Renter</th>
-                        <th scope="col">Car</th>
-                        <th scope="col">Dates</th>
-                        <th scope="col">Total</th>
-                        <th scope="col">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for booking in history %}
-                        <tr>
-                            <td>{{ booking.renter_name }}</td>
-                            <td>{{ booking.vehicle.make }} {{ booking.vehicle.model }}</td>
-                            <td>{{ booking.start_date|date:"M j" }} – {{ booking.end_date|date:"M j, Y" }}</td>
-                            <td>₱{{ booking.total|floatformat:"-2g" }}</td>
-                            <td><span class="status-badge status-badge--{{ booking.status_key }}">{{ booking.status_label }}</span></td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% endif %}
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/agencyrequests/inbox.js' %}" defer></script>
 {% endblock %}
