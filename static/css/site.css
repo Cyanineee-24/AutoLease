@@ -6,6 +6,7 @@
 :root {
     --color-primary: #E61E4D;
     --color-primary-dark: #C9153F;
+    --color-primary-tint: #FFF0F3;
     --color-text: #222222;
     --color-muted: #6A6A6A;
     --color-background: #F7F7F7;
@@ -281,9 +282,16 @@ a { color: inherit; text-decoration: none; }
     border-color: var(--color-primary-dark);
 }
 
-.button-outline:hover:not(:disabled):not([aria-disabled="true"]),
-.back-button:hover:not([aria-disabled="true"]) {
+.button-outline:hover:not(:disabled):not([aria-disabled="true"]) {
     background: var(--color-background);
+}
+
+/* Back buttons take the brand colour on hover. The darker red keeps the
+   text readable on the light tint. */
+.back-button:hover:not([aria-disabled="true"]) {
+    background: var(--color-primary-tint);
+    border-color: var(--color-primary);
+    color: var(--color-primary-dark);
 }
 
 .button-danger:hover:not(:disabled):not([aria-disabled="true"]) {
