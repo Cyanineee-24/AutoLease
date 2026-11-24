@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from apps.fleet.forms import VehicleSearchForm
-from apps.fleet.models import Vehicle
+from apps.fleet.models import CITY_SIMILARITY_THRESHOLD, Vehicle
 
 MAX_SUGGESTIONS = 6
 # Same threshold as VehicleQuerySet.search for whole-value similarity.
@@ -87,10 +87,20 @@ def _item(value, count):
     return {'value': value, 'label': value, 'meta': f'{count} car{"s" if count != 1 else ""}'}
 
 
+def _city_matches(term):
+    """Like _matches, but stricter for cities: most end in "City", so a whole
+    two-word name must be at least half similar, and word similarity is used
+    only for a one-word term ("cebo"), never to match "Cebu City" to "Davao City"."""
+    condition = Q(city__icontains=term) | Q(city_sim__gt=CITY_SIMILARITY_THRESHOLD)
+    if ' ' not in term:
+        condition |= Q(city_word__gt=WORD_SIMILARITY_THRESHOLD)
+    return condition
+
+
 def _city_suggestions(term):
     rows = (
         _with_similarity(Vehicle.objects.available(), term, 'city')
-        .filter(_matches('city', term))
+        .filter(_city_matches(term))
         .values('city')
         .annotate(cars=Count('pk'), starts=_starts_with(term, 'city'), score=Max(_fuzzy('city', term)))
         .order_by('-starts', '-score', 'city')[:MAX_SUGGESTIONS]

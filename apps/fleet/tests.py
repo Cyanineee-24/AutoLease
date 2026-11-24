@@ -90,6 +90,16 @@ class VehicleQuerySetSearchTests(FleetTestBase):
         res_loc_typo = list(Vehicle.objects.available().search(location='cebu cty'))
         self.assertIn(self.vehicle, res_loc_typo)
 
+    def test_search_location_does_not_match_other_cities_by_the_word_city(self):
+        davao_car = Vehicle.objects.create(
+            agency=self.agency_profile, make='Toyota', model='Hilux', year=2023,
+            plate_number='DVO 1234', transmission='Manual', fuel_type='Diesel', seats=5,
+            color='White', daily_rate=Decimal('4500.00'), city='Davao City', status='available',
+        )
+        results = list(Vehicle.objects.available().search(location='Cebu City'))
+        self.assertIn(self.vehicle, results)
+        self.assertNotIn(davao_car, results)
+
     def test_status_filtering_excludes_unavailable_and_maintenance(self):
         unavail = Vehicle.objects.create(
             agency=self.agency_profile,

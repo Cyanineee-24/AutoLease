@@ -203,6 +203,10 @@ class SuggestTests(TestCase):
     def test_typo_cebo_suggests_cebu_city(self):
         self.assertIn('Cebu City', [item['value'] for item in self.suggest('location', 'cebo')])
 
+    def test_full_city_name_does_not_suggest_other_cities(self):
+        self.assertEqual([item['value'] for item in self.suggest('location', 'Cebu City')], ['Cebu City'])
+        self.assertEqual([item['value'] for item in self.suggest('location', 'cebu cty')], ['Cebu City'])
+
     def test_toy_returns_the_make_before_its_models(self):
         items = self.suggest('q', 'toy')
         values = [item['value'] for item in items]

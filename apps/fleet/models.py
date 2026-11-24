@@ -12,6 +12,9 @@ from django.db.models import Avg, Count, F, Q
 from django.db.models.functions import Greatest
 
 
+CITY_SIMILARITY_THRESHOLD = 0.5
+
+
 class VehicleQuerySet(models.QuerySet):
     """Custom queryset for vehicle browsing, search, and annotation."""
 
@@ -70,9 +73,11 @@ class VehicleQuerySet(models.QuerySet):
             qs = qs.order_by('-created_at', '-pk')
 
         if location:
+            # 0.5, not 0.3: "Cebu City" and "Davao City" share the word "City"
+            # and score 0.33, while a typo like "cebu cty" still scores 0.55.
             city_similarity = TrigramSimilarity('city', location)
             qs = qs.annotate(city_similarity=city_similarity).filter(
-                Q(city__icontains=location) | Q(city_similarity__gt=0.3)
+                Q(city__icontains=location) | Q(city_similarity__gt=CITY_SIMILARITY_THRESHOLD)
             )
 
         if start and end and end >= start:
