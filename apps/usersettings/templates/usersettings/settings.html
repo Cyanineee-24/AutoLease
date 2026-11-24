@@ -4,7 +4,7 @@
 {% block title %}Settings | AutoLease{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/usersettings/settings.css' %}">
+<link rel="stylesheet" href="{% static 'css/usersettings/settings.css' %}?v=8">
 {% endblock %}
 
 {% block content %}
@@ -12,7 +12,7 @@
     <div class="auth-stack">
         {% url 'userprofile:profile' as back_url %}
         {% include '_back_button.html' with url=back_url label='Back to profile' %}
-        <div class="auth-card card">
+        <div class="auth-card card settings-card">
             <p class="eyebrow">Preferences</p>
             <h1>Settings</h1>
             <p class="auth-copy">Manage your notification, privacy, and security preferences.</p>
@@ -25,7 +25,7 @@
                 </div>
             {% endif %}
 
-            <form method="post" class="auth-form">
+            <form method="post" class="auth-form settings-form">
                 {% csrf_token %}
 
                 <div class="settings-section">
@@ -33,31 +33,31 @@
 
                     <div class="settings-toggle">
                         <label class="toggle-row" for="{{ form.email_notifications.id_for_label }}">
-                            {{ form.email_notifications }}
                             <div class="toggle-label-group">
                                 <span class="toggle-label">Email notifications</span>
                                 <span class="toggle-desc">Booking requests, approvals, declines and cancellations.</span>
                             </div>
+                            {{ form.email_notifications }}
                         </label>
                     </div>
 
                     <div class="settings-toggle">
                         <label class="toggle-row" for="{{ form.marketing_emails.id_for_label }}">
-                            {{ form.marketing_emails }}
                             <div class="toggle-label-group">
                                 <span class="toggle-label">Marketing emails</span>
                                 <span class="toggle-desc">Receive promotional offers and deals from AutoLease.</span>
                             </div>
+                            {{ form.marketing_emails }}
                         </label>
                     </div>
 
                     <div class="settings-toggle">
                         <label class="toggle-row" for="{{ form.sms_notifications.id_for_label }}">
-                            {{ form.sms_notifications }}
                             <div class="toggle-label-group">
                                 <span class="toggle-label">SMS notifications</span>
                                 <span class="toggle-desc">Receive text messages for booking updates and reminders.</span>
                             </div>
+                            {{ form.sms_notifications }}
                         </label>
                     </div>
                 </div>
@@ -67,11 +67,11 @@
 
                     <div class="settings-toggle">
                         <label class="toggle-row" for="{{ form.show_contact_number.id_for_label }}">
-                            {{ form.show_contact_number }}
                             <div class="toggle-label-group">
                                 <span class="toggle-label">Show contact number</span>
                                 <span class="toggle-desc">Allow the other party in a booking or inquiry to see your contact number.</span>
                             </div>
+                            {{ form.show_contact_number }}
                         </label>
                     </div>
                 </div>
